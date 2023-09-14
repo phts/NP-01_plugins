@@ -1,4 +1,6 @@
-# volumio-plugins-sources
-Volumio plugins source code for Volumio 3
+# PHTS NP-01: Volumio plugin sources
 
-You want to write a plugin to extend Volumio, or before sending a Pull Request, please have a look [here](https://developers.volumio.com)
+Modified [Volumio plugins][volumio-plugins-sources] which are used by [PHTS NP-01].
+
+[phts np-01]: https://tsaryk.com/NP-01
+[volumio-plugins-sources]: https://github.com/volumio/volumio-plugins-sources
