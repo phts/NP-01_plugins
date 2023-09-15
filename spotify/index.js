@@ -1382,9 +1382,9 @@ ControllerSpotify.prototype.getAlbumTracks = function (id) {
               album: album,
               albumart: albumart,
               uri: track.uri,
-              samplerate: self.getCurrentBitrate(),
+              samplerate: '',
               bitdepth: '16 bit',
-              bitrate: '',
+              bitrate: self.getCurrentBitrate(),
               trackType: 'spotify',
               duration: Math.trunc(track.duration_ms / 1000),
             });
@@ -1431,9 +1431,9 @@ ControllerSpotify.prototype.getPlaylistTracks = function (userId, playlistId) {
                 artist: track.artists[0].name,
                 album: track.album.name,
                 uri: track.uri,
-                samplerate: self.getCurrentBitrate(),
+                samplerate: '',
                 bitdepth: '16 bit',
-                bitrate: '',
+                bitrate: self.getCurrentBitrate(),
                 trackType: 'spotify',
                 albumart:
                   track.album.hasOwnProperty('images') && track.album.images.length > 0
@@ -1482,9 +1482,9 @@ ControllerSpotify.prototype.getArtistTopTracks = function (id) {
             album: track.album.name,
             albumart: albumart,
             duration: parseInt(track.duration_ms / 1000),
-            samplerate: self.getCurrentBitrate(),
+            samplerate: '',
             bitdepth: '16 bit',
-            bitrate: '',
+            bitrate: self.getCurrentBitrate(),
             trackType: 'spotify',
             uri: track.uri,
           });
@@ -1628,9 +1628,9 @@ ControllerSpotify.prototype.getTrack = function (id) {
         type: 'song',
         duration: parseInt(results.body.duration_ms / 1000),
         albumart: albumart,
-        samplerate: self.getCurrentBitrate(),
+        samplerate: '',
         bitdepth: '16 bit',
-        bitrate: '',
+        bitrate: self.getCurrentBitrate(),
         trackType: 'spotify',
       };
       response.push(item);
@@ -2114,9 +2114,9 @@ ControllerSpotify.prototype.volspotconnectDaemonConnect = function (defer) {
     trackType: 'spotify',
     seek: 0,
     duration: 0,
-    samplerate: this.getCurrentBitrate(),
+    samplerate: '',
     bitdepth: '16 bit',
-    bitrate: '',
+    bitrate: this.getCurrentBitrate(),
     channels: 2,
   };
 
@@ -2264,9 +2264,9 @@ ControllerSpotify.prototype.volspotconnectDaemonConnect = function (defer) {
     this.state.duration = Math.ceil(meta.duration_ms / 1000);
     this.state.seek = meta.position_ms;
     this.state.albumart = `https://i.scdn.co/image/${albumartId}`;
-    this.state.samplerate = this.getCurrentBitrate();
+    this.state.samplerate = '';
     this.state.bitdepth = '16 bit';
-    this.state.bitrate = '';
+    this.state.bitrate = this.getCurrentBitrate();
 
     if (
       currentTrackContext &&
