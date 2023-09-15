@@ -22,6 +22,7 @@ const SpotifyWebApi = require('spotify-web-api-node');
 const SpotConnCtrl = require('./SpotConnController').SpotConnEvents;
 const msgMap = require('./SpotConnController').msgMap;
 const logger = require('./logger');
+const { parseYear } = require('./helpers');
 
 // Global vars
 var seekTimer;
@@ -498,12 +499,14 @@ ControllerSpotify.prototype.getMyAlbums = function (curUri) {
 
         for (var i in results.body.items) {
           var album = results.body.items[i].album;
+          const year = parseYear(album);
           response.navigation.lists[0].items.push({
             service: 'spop',
             type: 'folder',
             title: album.name,
             albumart: self._getAlbumArt(album),
             uri: album.uri,
+            year: parseYear(album),
           });
         }
         defer.resolve(response);
@@ -552,6 +555,7 @@ ControllerSpotify.prototype.getMyTracks = function (curUri) {
               album: track.album.name || null,
               albumart: self._getAlbumArt(track.album),
               uri: track.uri,
+              year: parseYear(track.album),
             });
           }
         }
@@ -648,6 +652,7 @@ ControllerSpotify.prototype.getTopTracks = function (curUri) {
               album: track.album.name || null,
               albumart: self._getAlbumArt(track.album),
               uri: track.uri,
+              year: parseYear(track.album),
             });
           }
         }
@@ -698,6 +703,7 @@ ControllerSpotify.prototype.getRecentTracks = function (curUri) {
               album: track.album.name || null,
               albumart: self._getAlbumArt(track.album),
               uri: track.uri,
+              year: parseYear(track.album),
             });
           }
         }
@@ -1157,6 +1163,7 @@ ControllerSpotify.prototype.getArtistAlbumTracks = function (id) {
                 album: album.name,
                 albumart: self._getAlbumArt(album),
                 uri: track.uri,
+                year: parseYear(album),
               });
             }
           }
@@ -1387,6 +1394,7 @@ ControllerSpotify.prototype.getAlbumTracks = function (id) {
               bitrate: self.getCurrentBitrate(),
               trackType: 'spotify',
               duration: Math.trunc(track.duration_ms / 1000),
+              year: parseYear(results.body),
             });
           }
         }
@@ -1440,6 +1448,7 @@ ControllerSpotify.prototype.getPlaylistTracks = function (userId, playlistId) {
                     ? track.album.images[0].url
                     : '',
                 duration: Math.trunc(track.duration_ms / 1000),
+                year: parseYear(track.album),
               };
               response.push(item);
             } catch (e) {}
@@ -1487,6 +1496,7 @@ ControllerSpotify.prototype.getArtistTopTracks = function (id) {
             bitrate: self.getCurrentBitrate(),
             trackType: 'spotify',
             uri: track.uri,
+            year: parseYear(track.album),
           });
         }
       }
@@ -1538,7 +1548,7 @@ ControllerSpotify.prototype.getAlbumInfo = function (id) {
         if (results && results.body && results.body.name) {
           info.album = results.body.name;
           info.artist = results.body.artists[0].name;
-
+          info.year = parseYear(results.body);
           info.albumart = results.body.images[0].url;
           info.type = 'album';
         }
@@ -1632,6 +1642,7 @@ ControllerSpotify.prototype.getTrack = function (id) {
         bitdepth: '16 bit',
         bitrate: self.getCurrentBitrate(),
         trackType: 'spotify',
+        year: parseYear(results.body.album),
       };
       response.push(item);
       self.debugLog('GET TRACK: ' + response);
@@ -2267,6 +2278,7 @@ ControllerSpotify.prototype.volspotconnectDaemonConnect = function (defer) {
     this.state.samplerate = '';
     this.state.bitdepth = '16 bit';
     this.state.bitrate = this.getCurrentBitrate();
+    this.state.year = parseYear(meta.album_release_date);
 
     if (
       currentTrackContext &&
