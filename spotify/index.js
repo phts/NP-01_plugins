@@ -478,19 +478,7 @@ ControllerSpotify.prototype.getMyPlaylists = function (curUri) {
 
 ControllerSpotify.prototype.getMyAlbums = function () {
   const defer = libQ.defer();
-  const response = {
-    navigation: {
-      prev: {
-        uri: 'spotify',
-      },
-      lists: [
-        {
-          availableListViews: ['list', 'grid'],
-          items: [],
-        },
-      ],
-    },
-  };
+  const albums = [];
 
   this.spotifyCheckAccessToken().then(() => {
     fetchPagedData(
@@ -501,7 +489,7 @@ ControllerSpotify.prototype.getMyAlbums = function () {
         onData: (items) => {
           for (var i in items) {
             var album = items[i].album;
-            response.navigation.lists[0].items.push({
+            albums.push({
               service: 'spop',
               type: 'folder',
               title: album.name,
@@ -513,7 +501,21 @@ ControllerSpotify.prototype.getMyAlbums = function () {
           }
         },
         onEnd: () => {
-          defer.resolve(response);
+          albums.sort((a, b) => (a.year > b.year ? 1 : a.year === b.year ? 0 : -1));
+          albums.sort((a, b) => (a.artist > b.artist ? 1 : a.artist === b.artist ? 0 : -1));
+          defer.resolve({
+            navigation: {
+              prev: {
+                uri: 'spotify',
+              },
+              lists: [
+                {
+                  availableListViews: ['list', 'grid'],
+                  items: albums,
+                },
+              ],
+            },
+          });
         },
       }
     ).catch((err) => {
@@ -528,19 +530,7 @@ ControllerSpotify.prototype.getMyAlbums = function () {
 
 ControllerSpotify.prototype.getMyTracks = function () {
   const defer = libQ.defer();
-  const response = {
-    navigation: {
-      prev: {
-        uri: 'spotify',
-      },
-      lists: [
-        {
-          availableListViews: ['list'],
-          items: [],
-        },
-      ],
-    },
-  };
+  const tracks = [];
 
   this.spotifyCheckAccessToken().then(() => {
     fetchPagedData(
@@ -552,21 +542,38 @@ ControllerSpotify.prototype.getMyTracks = function () {
           for (var i in items) {
             var track = items[i].track;
             if (this.isTrackAvailableInCountry(track)) {
-              response.navigation.lists[0].items.push({
+              tracks.push({
                 service: 'spop',
                 type: 'song',
                 title: track.name,
-                artist: track.artists[0].name || null,
+                artist: track.artists[0] ? track.artists[0].name : null,
                 album: track.album.name || null,
                 albumart: this._getAlbumArt(track.album),
                 uri: track.uri,
                 year: parseYear(track.album),
+                tracknumber: track.track_number,
               });
             }
           }
         },
         onEnd: () => {
-          defer.resolve(response);
+          tracks.sort((a, b) => (a.tracknumber > b.tracknumber ? 1 : a.tracknumber === b.tracknumber ? 0 : -1));
+          tracks.sort((a, b) => (a.year > b.year ? 1 : a.year === b.year ? 0 : -1));
+          tracks.sort((a, b) => (a.album > b.album ? 1 : a.album === b.album ? 0 : -1));
+          tracks.sort((a, b) => (a.artist > b.artist ? 1 : a.artist === b.artist ? 0 : -1));
+          defer.resolve({
+            navigation: {
+              prev: {
+                uri: 'spotify',
+              },
+              lists: [
+                {
+                  availableListViews: ['list'],
+                  items: tracks,
+                },
+              ],
+            },
+          });
         },
       }
     ).catch((err) => {
