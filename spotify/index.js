@@ -241,7 +241,6 @@ ControllerSpotify.prototype.spotifyCheckAccessToken = function () {
   var defer = libQ.defer();
   var d = new Date();
   var now = d.getTime();
-  var oldAccessToken = self.accessToken;
 
   if (self.spotifyAccessTokenExpiration < now) {
     self
@@ -251,10 +250,6 @@ ControllerSpotify.prototype.spotifyCheckAccessToken = function () {
         defer.resolve('');
       })
       .fail((error) => {
-        self.logger.error('Failed to refresh Token: ' + error);
-        defer.reject(error);
-      })
-      .catch((error) => {
         self.logger.error('Failed to refresh Token: ' + error);
         defer.reject(error);
       });
