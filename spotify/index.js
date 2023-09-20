@@ -196,6 +196,8 @@ ControllerSpotify.prototype.handleBrowseUri = function (curUri) {
       response = self.getMyAlbums(curUri);
     } else if (curUri.startsWith('spotify/mytracks')) {
       response = self.getMyTracks(curUri);
+    } else if (curUri.startsWith('spotify/myartists')) {
+      response = self.getMyArtists(curUri);
     } else if (curUri.startsWith('spotify/mytopartists')) {
       response = self.getTopArtists(curUri);
     } else if (curUri.startsWith('spotify/mytoptracks')) {
@@ -342,11 +344,11 @@ ControllerSpotify.prototype.listRoot = function (curUri) {
             {
               service: 'spop',
               type: 'streaming-category',
-              title: self.getI18n('MY_TOP_ARTISTS'),
+              title: self.getI18n('MY_ARTISTS'),
               artist: '',
               album: '',
               albumart: '/albumart?sourceicon=music_service/spop/icons/artist.png',
-              uri: 'spotify/mytopartists',
+              uri: 'spotify/myartists',
             },
             {
               service: 'spop',
@@ -356,6 +358,15 @@ ControllerSpotify.prototype.listRoot = function (curUri) {
               album: '',
               albumart: '/albumart?sourceicon=music_service/spop/icons/track.png',
               uri: 'spotify/mytoptracks',
+            },
+            {
+              service: 'spop',
+              type: 'streaming-category',
+              title: self.getI18n('MY_TOP_ARTISTS'),
+              artist: '',
+              album: '',
+              albumart: '/albumart?sourceicon=music_service/spop/icons/artist.png',
+              uri: 'spotify/mytopartists',
             },
             {
               service: 'spop',
@@ -564,6 +575,56 @@ ControllerSpotify.prototype.getMyTracks = function () {
       }
     ).catch((err) => {
       this.logger.error('An error occurred while listing Spotify my tracks ' + err);
+      this.handleBrowsingError(err);
+      defer.reject('');
+    });
+  });
+
+  return defer.promise;
+};
+
+ControllerSpotify.prototype.getMyArtists = function () {
+  const defer = libQ.defer();
+  const artists = [];
+
+  this.spotifyCheckAccessToken().then(() => {
+    fetchPagedData(
+      this.spotifyApi,
+      'getFollowedArtists',
+      { paginationType: 'after' },
+      {
+        getItems: (data) => data.body?.artists?.items || [],
+        onData: (items) => {
+          for (var i in items) {
+            const artist = items[i];
+            artists.push({
+              service: 'spop',
+              type: 'folder',
+              title: artist.name,
+              albumart: this._getAlbumArt(artist),
+              uri: artist.uri,
+            });
+          }
+        },
+        onEnd: () => {
+          artists.sort((a, b) => (a.title > b.title ? 1 : a.title === b.title ? 0 : -1));
+          defer.resolve({
+            navigation: {
+              prev: {
+                uri: 'spotify',
+              },
+              lists: [
+                {
+                  availableListViews: ['list', 'grid'],
+                  items: artists,
+                },
+              ],
+            },
+          });
+        },
+      }
+    ).catch((err) => {
+      this.logger.error('An error occurred while listing Spotify my artists ' + err);
       this.handleBrowsingError(err);
       defer.reject('');
     });
