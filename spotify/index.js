@@ -27,15 +27,6 @@ const { fetchPagedData, rateLimitedCall } = require('./utils/extendedSpotifyApi'
 
 // Global vars
 var seekTimer;
-var thisSpotifyConnectDeviceId;
-var spotifyApi;
-var selectedBitrate;
-var accessToken;
-var spotifyAccessTokenExpiration;
-var isBrowsingInitialized = false;
-var loggedInUsername;
-var userCountry;
-var socket;
 var currentSpotifyVolume;
 var currentVolumioVolume;
 var startVolume;
@@ -146,7 +137,7 @@ ControllerSpotify.prototype.initializeBrowsingFacility = function () {
 
   if (self.isUserLoggedIn() && !self.isBrowsingInitialized) {
     self.logger.info('Initliazing Spotify Browsing Facility');
-    isBrowsingInitialized = true;
+    self.isBrowsingInitialized = true;
     self.addToBrowseSources();
     self.identifyThisConnectDevice();
     self.getUserInformations();
