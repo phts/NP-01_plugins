@@ -21,6 +21,10 @@ async function fetchPagedData(
       break;
     }
     onData(items);
+    if (items.length < limit) {
+      onEnd();
+      break;
+    }
     nextPage[paginationType](items);
   }
 }
