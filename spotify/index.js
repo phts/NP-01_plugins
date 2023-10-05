@@ -2892,7 +2892,7 @@ ControllerSpotify.prototype.pause = function () {
         this.pushState();
       },
       (err) => {
-        logger.error('Failed to pause ' + error);
+        logger.error('Failed to pause ' + err);
       }
     );
   });
