@@ -1419,6 +1419,7 @@ ControllerSpotify.prototype.getMyAlbums = function () {
               albumart: this._getAlbumArt(album),
               uri: album.uri,
               year: parseYear(album),
+              artist: album.artists[0] ? album.artists[0].name : null,
             });
           }
         },
