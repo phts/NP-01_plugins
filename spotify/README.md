@@ -1,15 +1,6 @@
-# New Spotify Plugin
+# Spotify plugin
 
+Noticeable changes:
 
-This repo serves as WIP for the new spotify plugin. It is currently in development and not ready for use.
-
-## Installation
-
-To prepare the environment for go and go librespot 
-    
-```bash
-cd librespot-go
-./prepare-env.sh
-./clone-and-prepare.sh
-```
-
+- Show all "My tracks" and " My albums"
+- Provide year to state and show it in media library
