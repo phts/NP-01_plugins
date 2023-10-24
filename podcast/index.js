@@ -653,7 +653,8 @@ ControllerPodcast.prototype.getPodcastContent = function(uri) {
     .then((feed) => {
       const langCode = self.commandRouter.sharedVars.get('language_code');
       const formatter = new Intl.DateTimeFormat(langCode);
-      response.navigation.lists[0].title = feed.rss.channel.title;
+      const channelTitle = feed.rss.channel.title;
+      response.navigation.lists[0].title = channelTitle;
 
       if (!feed.rss.channel.item) {
         feed.rss.channel.item = [];
@@ -676,6 +677,7 @@ ControllerPodcast.prototype.getPodcastContent = function(uri) {
 
           const pubDate = entry.pubDate ? formatter.format(new Date(entry.pubDate)) : null;
           const param = {
+            artist: channelTitle,
             title: entry.title,
             url: entry.enclosure.url,
             albumart: imageUrl
@@ -735,6 +737,7 @@ ControllerPodcast.prototype.explodeUri = function (uri) {
     type: 'track',
     uri: uri,
     trackType: self.getPodcastI18nString('PLUGIN_NAME'),
+    artist: episode.artist,
     name: episode.title,
     albumart: episode.albumart
       ? episode.albumart

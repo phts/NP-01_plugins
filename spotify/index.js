@@ -13,6 +13,7 @@ var exec = require('child_process').exec;
 var execSync = require('child_process').execSync;
 var NodeCache = require('node-cache');
 var os = require('os');
+const { parseYear } = require('./helpers');
 
 var configFileDestinationPath = '/tmp/go-librespot-config.yml';
 var credentialsPath = '/data/configuration/music_service/spop/spotifycredentials.json';
@@ -220,7 +221,7 @@ ControllerSpotify.prototype.resetSpotifyState = function () {
     duration: 0,
     samplerate: '44.1 KHz',
     bitdepth: '16 bit',
-    bitrate: '',
+    bitrate: self.getCurrentBitrate(),
     codec: 'ogg',
     channels: 2,
   };
@@ -1415,6 +1416,7 @@ ControllerSpotify.prototype.getMyAlbums = function (curUri) {
             title: album.name,
             albumart: self._getAlbumArt(album),
             uri: album.uri,
+            year: parseYear(album),
           });
         }
         defer.resolve(response);
@@ -1463,6 +1465,7 @@ ControllerSpotify.prototype.getMyTracks = function (curUri) {
               album: track.album.name || null,
               albumart: self._getAlbumArt(track.album),
               uri: track.uri,
+              year: parseYear(track.album),
             });
           }
         }
@@ -1559,6 +1562,7 @@ ControllerSpotify.prototype.getTopTracks = function (curUri) {
               album: track.album.name || null,
               albumart: self._getAlbumArt(track.album),
               uri: track.uri,
+              year: parseYear(track.album),
             });
           }
         }
@@ -1609,6 +1613,7 @@ ControllerSpotify.prototype.getRecentTracks = function (curUri) {
               album: track.album.name || null,
               albumart: self._getAlbumArt(track.album),
               uri: track.uri,
+              year: parseYear(track.album),
             });
           }
         }
@@ -1739,6 +1744,7 @@ ControllerSpotify.prototype.listWebNew = function (curUri) {
             title: album.name,
             albumart: self._getAlbumArt(album),
             uri: album.uri,
+            year: parseYear(album),
           });
         }
         defer.resolve(response);
@@ -1996,6 +2002,7 @@ ControllerSpotify.prototype.listArtistAlbums = function (id) {
         title: album.name,
         albumart: self._getAlbumArt(album),
         uri: album.uri,
+        year: parseYear(album),
       });
     }
     defer.resolve(response);
@@ -2068,6 +2075,7 @@ ControllerSpotify.prototype.getArtistAlbumTracks = function (id) {
                 album: album.name,
                 albumart: self._getAlbumArt(album),
                 uri: track.uri,
+                year: parseYear(album),
               });
             }
           }
@@ -2096,6 +2104,7 @@ ControllerSpotify.prototype.getArtistAlbums = function (artistId) {
           title: album.name,
           albumart: self._getAlbumArt(album),
           uri: album.uri,
+          year: parseYear(album),
         });
       }
       defer.resolve(response);
@@ -2160,12 +2169,13 @@ ControllerSpotify.prototype.getAlbumTracks = function (id) {
               album: album,
               albumart: albumart,
               uri: track.uri,
-              samplerate: self.getCurrentBitrate(),
+              samplerate: '44.1 KHz',
               bitdepth: '16 bit',
-              bitrate: '',
+              bitrate: self.getCurrentBitrate(),
               codec: 'ogg',
               trackType: 'spotify',
               duration: Math.trunc(track.duration_ms / 1000),
+              year: parseYear(results.body),
             });
           }
         }
@@ -2204,9 +2214,9 @@ ControllerSpotify.prototype.getPlaylistTracks = function (userId, playlistId) {
                 artist: track.artists[0].name,
                 album: track.album.name,
                 uri: track.uri,
-                samplerate: self.getCurrentBitrate(),
+                samplerate: '44.1 KHz',
                 bitdepth: '16 bit',
-                bitrate: '',
+                bitrate: self.getCurrentBitrate(),
                 codec: 'ogg',
                 trackType: 'spotify',
                 albumart:
@@ -2214,6 +2224,7 @@ ControllerSpotify.prototype.getPlaylistTracks = function (userId, playlistId) {
                     ? track.album.images[0].url
                     : '',
                 duration: Math.trunc(track.duration_ms / 1000),
+                year: parseYear(track.album),
               };
               response.push(item);
             } catch (e) {}
@@ -2256,12 +2267,13 @@ ControllerSpotify.prototype.getArtistTopTracks = function (id) {
             album: track.album.name,
             albumart: albumart,
             duration: parseInt(track.duration_ms / 1000),
-            samplerate: self.getCurrentBitrate(),
+            samplerate: '44.1 KHz',
             bitdepth: '16 bit',
-            bitrate: '',
+            bitrate: self.getCurrentBitrate(),
             codec: 'ogg',
             trackType: 'spotify',
             uri: track.uri,
+            year: parseYear(track.album),
           });
         }
       }
@@ -2313,7 +2325,7 @@ ControllerSpotify.prototype.getAlbumInfo = function (id) {
         if (results && results.body && results.body.name) {
           info.album = results.body.name;
           info.artist = results.body.artists[0].name;
-
+          info.year = parseYear(results.body);
           info.albumart = results.body.images[0].url;
           info.type = 'album';
         }
@@ -2403,11 +2415,12 @@ ControllerSpotify.prototype.getTrack = function (id) {
         type: 'song',
         duration: parseInt(results.body.duration_ms / 1000),
         albumart: albumart,
-        samplerate: self.getCurrentBitrate(),
+        samplerate: '44.1 KHz',
         bitdepth: '16 bit',
-        bitrate: '',
+        bitrate: self.getCurrentBitrate(),
         codec: 'ogg',
         trackType: 'spotify',
+        year: parseYear(results.body.album),
       };
       response.push(item);
       self.debugLog('GET TRACK: ' + JSON.stringify(response));
