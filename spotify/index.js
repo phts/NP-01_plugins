@@ -1577,6 +1577,7 @@ ControllerSpotify.prototype.getTopTracks = function (curUri) {
               albumart: self._getAlbumArt(track.album),
               uri: track.uri,
               year: parseYear(track.album),
+              trucknumber: track.trucknumber,
             });
           }
         }
@@ -1628,6 +1629,7 @@ ControllerSpotify.prototype.getRecentTracks = function (curUri) {
               albumart: self._getAlbumArt(track.album),
               uri: track.uri,
               year: parseYear(track.album),
+              trucknumber: track.trucknumber,
             });
           }
         }
@@ -2090,6 +2092,7 @@ ControllerSpotify.prototype.getArtistAlbumTracks = function (id) {
                 albumart: self._getAlbumArt(album),
                 uri: track.uri,
                 year: parseYear(album),
+                trucknumber: track.trucknumber,
               });
             }
           }
@@ -2190,6 +2193,7 @@ ControllerSpotify.prototype.getAlbumTracks = function (id) {
               trackType: 'spotify',
               duration: Math.trunc(track.duration_ms / 1000),
               year: parseYear(results.body),
+              trucknumber: track.trucknumber,
             });
           }
         }
@@ -2239,6 +2243,7 @@ ControllerSpotify.prototype.getPlaylistTracks = function (userId, playlistId) {
                     : '',
                 duration: Math.trunc(track.duration_ms / 1000),
                 year: parseYear(track.album),
+                trucknumber: track.trucknumber,
               };
               response.push(item);
             }
@@ -2289,6 +2294,7 @@ ControllerSpotify.prototype.getArtistTopTracks = function (id) {
             trackType: 'spotify',
             uri: track.uri,
             year: parseYear(track.album),
+            trucknumber: track.trucknumber,
           });
         }
       }
@@ -2400,40 +2406,42 @@ ControllerSpotify.prototype.getTrack = function (id) {
   this.spotifyCheckAccessToken().then(() => {
     rateLimitedCall(this.spotifyApi, 'getTrack', { args: [id], logger: this.logger })
       .then((results) => {
+        const track = results.body;
         var response = [];
         var artist = '';
         var album = '';
         var albumart = '';
 
-        if (results.body.artists.length > 0) {
-          artist = results.body.artists[0].name;
+        if (track.artists.length > 0) {
+          artist = track.artists[0].name;
         }
 
-        if (results.body.hasOwnProperty('album') && results.body.album.hasOwnProperty('name')) {
-          album = results.body.album.name;
+        if (track.hasOwnProperty('album') && track.album.hasOwnProperty('name')) {
+          album = track.album.name;
         }
 
-        if (results.body.album.hasOwnProperty('images') && results.body.album.images.length > 0) {
-          albumart = results.body.album.images[0].url;
+        if (track.album.hasOwnProperty('images') && track.album.images.length > 0) {
+          albumart = track.album.images[0].url;
         } else {
           albumart = '';
         }
 
         var item = {
-          uri: results.body.uri,
+          uri: track.uri,
           service: 'spop',
-          name: results.body.name,
+          name: track.name,
           artist: artist,
           album: album,
           type: 'song',
-          duration: parseInt(results.body.duration_ms / 1000),
+          duration: parseInt(track.duration_ms / 1000),
           albumart: albumart,
           samplerate: '44.1 KHz',
           bitdepth: '16 bit',
           bitrate: this.getCurrentBitrate(),
           codec: 'ogg',
           trackType: 'spotify',
-          year: parseYear(results.body.album),
+          year: parseYear(track.album),
+          trucknumber: track.trucknumber,
         };
         response.push(item);
         this.debugLog('GET TRACK: ' + JSON.stringify(response));
