@@ -1,1 +1,1 @@
-module.exports.parseYear = (obj) => (obj && obj.release_date ? obj.release_date.split('-')[0] : null);
+module.exports.parseYear = (album) => (album && album.release_date ? album.release_date.split('-')[0] : null);
