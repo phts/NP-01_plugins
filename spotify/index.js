@@ -937,7 +937,7 @@ ControllerSpotify.prototype.deleteCredentialsFile = function () {
   try {
     fs.unlinkSync(credentialsPath);
   } catch (err) {
-    self.logger.error('Failed to delete credentials file ' + e);
+    self.logger.error('Failed to delete credentials file ' + err);
   }
 };
 
