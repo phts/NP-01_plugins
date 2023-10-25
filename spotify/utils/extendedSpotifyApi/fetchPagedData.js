@@ -1,10 +1,11 @@
+const limit = 50;
+
 async function fetchPagedData(
   api,
   method,
   { requiredArgs = [], options, paginationType = 'offset' },
   { getItems = (d) => d.body?.items || [], onData, onEnd }
 ) {
-  const limit = 50;
   let offset = 0;
   let after = undefined;
 
