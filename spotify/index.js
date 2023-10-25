@@ -2898,3 +2898,7 @@ ControllerSpotify.prototype.startVolumeTimerLimit = function () {
         apiCallsCounter = 0;
     }, apiCallsTimespan);
 };
+
+ControllerSpotify.prototype.handleBrowsingError = function (errorMsg) {
+    this.commandRouter.pushToastMessage('error', 'Spotify API Error', errorMsg.toString());
+};
