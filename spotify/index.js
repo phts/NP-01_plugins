@@ -1449,7 +1449,6 @@ ControllerSpotify.prototype.getMyAlbums = function () {
             }
         ).catch((err) => {
             this.logger.error('An error occurred while listing Spotify my albums ' + err);
-            this.handleBrowsingError(err);
             defer.reject('');
         });
     });
@@ -1516,7 +1515,6 @@ ControllerSpotify.prototype.getMyTracks = function () {
             }
         ).catch((err) => {
             this.logger.error('An error occurred while listing Spotify my tracks ' + err);
-            this.handleBrowsingError(err);
             defer.reject('');
         });
     });
@@ -1565,7 +1563,6 @@ ControllerSpotify.prototype.getMyArtists = function () {
             }
         ).catch((err) => {
             this.logger.error('An error occurred while listing Spotify my artists ' + err);
-            this.handleBrowsingError(err);
             defer.reject('');
         });
     });
@@ -1610,7 +1607,6 @@ ControllerSpotify.prototype.getTopArtists = function (curUri) {
             },
             function (err) {
                 self.logger.error('An error occurred while listing Spotify my artists ' + err);
-                self.handleBrowsingError(err);
                 defer.reject('');
             }
         );
@@ -1662,7 +1658,6 @@ ControllerSpotify.prototype.getTopTracks = function (curUri) {
             },
             function (err) {
                 self.logger.error('An error occurred while listing Spotify top tracks ' + err);
-                self.handleBrowsingError(err);
                 defer.reject('');
             }
         );
@@ -1714,7 +1709,6 @@ ControllerSpotify.prototype.getRecentTracks = function (curUri) {
             },
             function (err) {
                 self.logger.error('An error occurred while listing Spotify recent tracks ' + err);
-                self.handleBrowsingError(err);
                 defer.reject('');
             }
         );
@@ -1760,7 +1754,6 @@ ControllerSpotify.prototype.featuredPlaylists = function (curUri) {
             },
             function (err) {
                 self.logger.error('An error occurred while listing Spotify featured playlists ' + err);
-                self.handleBrowsingError(err);
                 defer.reject('');
             }
         );
@@ -1844,7 +1837,6 @@ ControllerSpotify.prototype.listWebNew = function (curUri) {
             },
             function (err) {
                 self.logger.error('An error occurred while listing Spotify new albums ' + err);
-                self.handleBrowsingError(err);
                 defer.reject('');
             }
         );
@@ -1925,7 +1917,6 @@ ControllerSpotify.prototype.listWebCategories = function (curUri) {
             },
             function (err) {
                 self.logger.error('An error occurred while listing Spotify categories ' + err);
-                self.handleBrowsingError(err);
                 defer.reject('');
             }
         );
@@ -1973,7 +1964,6 @@ ControllerSpotify.prototype.listWebCategory = function (curUri) {
             },
             function (err) {
                 self.logger.error('An error occurred while listing Spotify playlist category ' + err);
-                self.handleBrowsingError(err);
                 defer.reject('');
             }
         );
@@ -2278,7 +2268,6 @@ ControllerSpotify.prototype.getAlbumTracks = function (id) {
             },
             function (err) {
                 self.logger.error('An error occurred while listing Spotify album tracks ' + err);
-                self.handleBrowsingError(err);
                 defer.reject('');
             }
         );
@@ -2332,7 +2321,6 @@ ControllerSpotify.prototype.getPlaylistTracks = function (userId, playlistId) {
             }
         ).catch((err) => {
             this.logger.error('An error occurred while exploding listing Spotify playlist tracks ' + err);
-            this.handleBrowsingError(err);
             defer.reject(err);
         });
     });
@@ -2379,7 +2367,6 @@ ControllerSpotify.prototype.getArtistTopTracks = function (id) {
         }),
             function (err) {
                 self.logger.error('An error occurred while listing Spotify artist tracks ' + err);
-                self.handleBrowsingError(err);
                 defer.reject('');
             };
     });
@@ -2441,7 +2428,6 @@ ControllerSpotify.prototype.getAlbumInfo = function (id) {
             }),
             function (err) {
                 self.logger.error('An error occurred while listing Spotify album informations ' + err);
-                self.handleBrowsingError(err);
                 defer.resolve(info);
             };
     });
@@ -2469,7 +2455,6 @@ ControllerSpotify.prototype.getPlaylistInfo = function (userId, playlistId) {
             function (err) {
                 defer.resolve(info);
                 self.logger.error('An error occurred while getting Playlist info: ' + err);
-                self.handleBrowsingError(err);
             }
         );
     });
@@ -2598,7 +2583,6 @@ ControllerSpotify.prototype.search = function (query) {
             },
             function (err) {
                 self.logger.error('An error occurred while searching ' + err);
-                self.handleBrowsingError(err);
                 defer.reject('');
             }
         );
@@ -2908,8 +2892,4 @@ ControllerSpotify.prototype.startVolumeTimerLimit = function () {
     volumeTimer = setInterval(() => {
         apiCallsCounter = 0;
     }, apiCallsTimespan);
-};
-
-ControllerSpotify.prototype.handleBrowsingError = function (errorMsg) {
-    this.commandRouter.pushToastMessage('error', 'Spotify API Error', errorMsg.toString());
 };
