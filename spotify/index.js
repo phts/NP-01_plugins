@@ -2094,29 +2094,37 @@ ControllerSpotify.prototype.listArtistTracks = function (id) {
     return defer.promise;
 };
 
-ControllerSpotify.prototype.listArtistAlbums = function (id) {
-    var self = this;
-
-    var defer = libQ.defer();
-
-    var spotifyDefer = self.spotifyApi.getArtistAlbums(id);
-    spotifyDefer.then(function (results) {
-        var response = [];
-        for (var i in results.body.items) {
-            var album = results.body.items[i];
-            response.push({
-                service: 'spop',
-                type: 'folder',
-                title: album.name,
-                albumart: self._getAlbumArt(album),
-                uri: album.uri,
-                year: parseYear(album),
-            });
+ControllerSpotify.prototype.listArtistAlbums = async function (id) {
+    const NAME_POSTFIXES = {
+        album: '',
+        single: ' [EP/Single]',
+        compilation: ' [Compilation]',
+        appears_on: ' [Appears on]',
+    };
+    const GROUP_ORDER = {
+        album: 1,
+        single: 2,
+        compilation: 3,
+        appears_on: 4,
+    };
+    await this.spotifyCheckAccessToken();
+    const response = await this.spotifyApi.getArtistAlbums(id, { limit: 50 });
+    const albums = response.body.items.map((album) => ({
+        service: 'spop',
+        type: 'folder',
+        title: album.name + NAME_POSTFIXES[album.album_group],
+        albumart: this._getAlbumArt(album),
+        uri: album.uri,
+        year: parseYear(album),
+        group: album.album_group,
+    }));
+    albums.sort((a, b) => {
+        if (a.group !== b.group) {
+            return GROUP_ORDER[a.group] - GROUP_ORDER[b.group];
         }
-        defer.resolve(response);
+        return a.year > b.year ? 1 : a.year === b.year ? 0 : -1;
     });
-
-    return defer.promise;
+    return albums;
 };
 
 ControllerSpotify.prototype.getArtistTracks = function (id) {
