@@ -2197,32 +2197,6 @@ ControllerSpotify.prototype.getArtistAlbumTracks = function (id) {
     return defer.promise;
 };
 
-ControllerSpotify.prototype.getArtistAlbums = function (artistId) {
-    var self = this;
-
-    var defer = libQ.defer();
-
-    self.spotifyCheckAccessToken().then(function (data) {
-        var spotifyDefer = self.spotifyApi.getArtistAlbums(artistId);
-        spotifyDefer.then(function (results) {
-            var response = [];
-            for (var i in results.body.items) {
-                var album = results.body.items[i];
-                response.push({
-                    service: 'spop',
-                    type: 'folder',
-                    title: album.name,
-                    albumart: self._getAlbumArt(album),
-                    uri: album.uri,
-                    year: parseYear(album),
-                });
-            }
-            defer.resolve(response);
-        });
-    });
-    return defer.promise;
-};
-
 ControllerSpotify.prototype.getArtistRelatedArtists = function (artistId) {
     var self = this;
 
