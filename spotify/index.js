@@ -1407,7 +1407,7 @@ ControllerSpotify.prototype.getMyPlaylists = function (curUri) {
                     var playlist = results.body.items[i];
                     response.navigation.lists[0].items.push({
                         service: 'spop',
-                        type: 'playlist',
+                        type: 'external-playlist',
                         title: playlist.name,
                         albumart: self._getAlbumArt(playlist),
                         uri: 'spotify:user:spotify:playlist:' + playlist.id,
@@ -1441,7 +1441,7 @@ ControllerSpotify.prototype.getMyAlbums = function () {
                         var album = items[i].album;
                         albums.push({
                             service: 'spop',
-                            type: 'folder',
+                            type: 'folder-album',
                             title: album.name,
                             albumart: this._getAlbumArt(album),
                             uri: album.uri,
@@ -1562,7 +1562,7 @@ ControllerSpotify.prototype.getMyArtists = function () {
                         const artist = items[i];
                         artists.push({
                             service: 'spop',
-                            type: 'folder',
+                            type: 'folder-artist',
                             title: artist.name,
                             albumart: this._getAlbumArt(artist),
                             uri: artist.uri,
@@ -1622,7 +1622,7 @@ ControllerSpotify.prototype.getTopArtists = function (curUri) {
                     var artist = results.body.items[i];
                     response.navigation.lists[0].items.push({
                         service: 'spop',
-                        type: 'folder',
+                        type: 'folder-artist',
                         title: artist.name,
                         albumart: self._getAlbumArt(artist),
                         uri: artist.uri,
@@ -1769,7 +1769,7 @@ ControllerSpotify.prototype.featuredPlaylists = function (curUri) {
                     var playlist = results.body.playlists.items[i];
                     response.navigation.lists[0].items.push({
                         service: 'spop',
-                        type: 'playlist',
+                        type: 'external-playlist',
                         title: playlist.name,
                         albumart: self._getAlbumArt(playlist),
                         uri: playlist.uri,
@@ -1851,7 +1851,7 @@ ControllerSpotify.prototype.listWebNew = function (curUri) {
                     var album = results.body.albums.items[i];
                     response.navigation.lists[0].items.push({
                         service: 'spop',
-                        type: 'folder',
+                        type: 'folder-album',
                         title: album.name,
                         albumart: self._getAlbumArt(album),
                         uri: album.uri,
@@ -1979,7 +1979,7 @@ ControllerSpotify.prototype.listWebCategory = function (curUri) {
                     var playlist = results.body.playlists.items[i];
                     response.navigation.lists[0].items.push({
                         service: 'spop',
-                        type: 'folder',
+                        type: 'external-playlist',
                         title: playlist.name,
                         albumart: self._getAlbumArt(playlist),
                         uri: playlist.uri,
@@ -2111,7 +2111,7 @@ ControllerSpotify.prototype.listArtistAlbums = async function (id) {
     const response = await this.spotifyApi.getArtistAlbums(id, { limit: 50 });
     const albums = response.body.items.map((album) => ({
         service: 'spop',
-        type: 'folder',
+        type: 'folder-album',
         title: album.name + NAME_POSTFIXES[album.album_group],
         albumart: this._getAlbumArt(album),
         uri: album.uri,
@@ -2220,7 +2220,7 @@ ControllerSpotify.prototype.getArtistRelatedArtists = function (artistId) {
                 var albumart = self._getAlbumArt(artist);
                 var item = {
                     service: 'spop',
-                    type: 'folder',
+                    type: 'folder-artist',
                     title: artist.name,
                     albumart: albumart,
                     uri: artist.uri,
@@ -2609,7 +2609,7 @@ ControllerSpotify.prototype._searchArtists = function (results) {
         }
         var item = {
             service: 'spop',
-            type: 'folder',
+            type: 'folder-artist',
             title: artist.name,
             albumart: albumart,
             uri: artist.uri,
@@ -2639,7 +2639,7 @@ ControllerSpotify.prototype._searchAlbums = function (results) {
 
         list.push({
             service: 'spop',
-            type: 'folder',
+            type: 'folder-album',
             title: album.name,
             artist: artist,
             albumart: albumart,
@@ -2661,7 +2661,7 @@ ControllerSpotify.prototype._searchPlaylists = function (results) {
         }
         list.push({
             service: 'spop',
-            type: 'folder',
+            type: 'external-playlist',
             title: playlist.name,
             albumart: albumart,
             uri: playlist.uri,
