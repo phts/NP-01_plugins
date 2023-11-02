@@ -2095,12 +2095,6 @@ ControllerSpotify.prototype.listArtistTracks = function (id) {
 };
 
 ControllerSpotify.prototype.listArtistAlbums = async function (id) {
-    const NAME_POSTFIXES = {
-        album: '',
-        single: ' [EP/Single]',
-        compilation: ' [Compilation]',
-        appears_on: ' [Appears on]',
-    };
     const GROUP_ORDER = {
         album: 1,
         single: 2,
@@ -2112,7 +2106,7 @@ ControllerSpotify.prototype.listArtistAlbums = async function (id) {
     const albums = response.body.items.map((album) => ({
         service: 'spop',
         type: 'folder-album',
-        title: album.name + NAME_POSTFIXES[album.album_group],
+        title: album.name,
         albumart: this._getAlbumArt(album),
         uri: album.uri,
         year: parseYear(album),
