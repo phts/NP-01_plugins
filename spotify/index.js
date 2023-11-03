@@ -40,11 +40,7 @@ var ignoreStopEvent = false;
 
 // Volume limiter
 var deltaVolumeTreshold = 2;
-var volumeTimer;
-var apiCallsCounter = 0;
-var apiCallsLimit = 5;
-var apiCallsTimespan = 5000;
-var spotifyVolumeMap;
+var volumeDebounce;
 
 // Debug
 var isDebugMode = true;
@@ -97,8 +93,6 @@ ControllerSpotify.prototype.onStart = function () {
     self.browseCache = new NodeCache({ stdTTL: 3600, checkperiod: 120 });
     self.initializeLibrespotDaemon();
     self.initializeSpotifyBrowsingFacility();
-    self.startVolumeTimerLimit();
-    self.loadVolumeMap();
     defer.resolve();
     return defer.promise;
 };
@@ -531,8 +525,6 @@ ControllerSpotify.prototype.repeat = function (value, repeatSingle) {
 ControllerSpotify.prototype.onSpotifyVolumeChange = function (volume) {
     var self = this;
 
-    // DIRTY HACK: We always receive volume from spotify -1 than the actual volume
-    volume = spotifyVolumeMap[volume];
     self.debugLog('RECEIVED SPOTIFY VOLUME ' + volume);
     if (volume !== currentVolumioVolume) {
         self.logger.info('Setting Volumio Volume from Spotify: ' + volume);
@@ -561,15 +553,13 @@ ControllerSpotify.prototype.setSpotifyDaemonVolume = function (volume) {
     var self = this;
 
     // Volume limiter
-    if (apiCallsCounter >= apiCallsLimit) {
-        self.debugLog(
-            'VOLUME LIMITER, API calls reached: ' + apiCallsCounter + ' calls in ' + apiCallsTimespan + ' ms'
-        );
-    } else {
-        self.debugLog('SETTING SPOTIFY VOLUME ' + volume);
-        apiCallsCounter++;
-        self.sendSpotifyLocalApiCommandWithPayload('/player/volume', { volume: volume });
+    if (volumeDebounce) {
+        clearTimeout(volumeDebounce);
     }
+    volumeDebounce = setTimeout(() => {
+        self.debugLog('SETTING SPOTIFY VOLUME ' + volume);
+        self.sendSpotifyLocalApiCommandWithPayload('/player/volume', { volume: volume });
+    }, 1500);
 };
 
 ControllerSpotify.prototype.checkSpotifyAndVolumioDeltaVolumeIsEnough = function (spotifyVolume, volumioVolume) {
@@ -2465,7 +2455,6 @@ ControllerSpotify.prototype.getPlaylistInfo = function (userId, playlistId) {
 
 ControllerSpotify.prototype.getTrack = function (id) {
     var defer = libQ.defer();
-
     this.spotifyCheckAccessToken().then(() => {
         rateLimitedCall(this.spotifyApi, 'getTrack', { args: [id], logger: this.logger })
             .then((results) => {
@@ -2874,23 +2863,4 @@ ControllerSpotify.prototype.getSpotifyVolume = function () {
                 currentSpotifyVolume = results.body.value;
             }
         });
-};
-
-ControllerSpotify.prototype.loadVolumeMap = function () {
-    var self = this;
-
-    self.logger.info('Loading Spotify Daemon to Volumio volume map');
-    spotifyVolumeMap = fs.readJsonSync(__dirname + '/spotifyDaemonVolumeMap.json');
-};
-
-ControllerSpotify.prototype.startVolumeTimerLimit = function () {
-    var self = this;
-
-    self.logger.info('Starting Volume Timer Limit Guard');
-    if (volumeTimer !== undefined) {
-        clearInterval(volumeTimer);
-    }
-    volumeTimer = setInterval(() => {
-        apiCallsCounter = 0;
-    }, apiCallsTimespan);
 };
