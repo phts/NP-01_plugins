@@ -2438,7 +2438,7 @@ ControllerSpotify.prototype.getPlaylistInfo = function (userId, playlistId) {
                 if (results && results.body && results.body.name) {
                     info.title = results.body.name;
                     info.albumart = results.body.images[0].url;
-                    info.type = 'album';
+                    info.type = 'external-playlist';
                     info.service = 'spop';
                 }
                 defer.resolve(info);
