@@ -2700,55 +2700,52 @@ ControllerSpotify.prototype._searchTracks = function (results) {
 };
 
 ControllerSpotify.prototype.searchArtistByName = function (artistName) {
-  var self = this;
-  var defer = libQ.defer();
+  const defer = libQ.defer();
 
-  self.spotifyApi.search(artistName, ['artist']).then((results) => {
-    if (results.body.hasOwnProperty('artists') && results.body.artists.items.length > 0) {
-      var artistResult = results.body.artists.items[0];
-      self
-        .listWebArtist('spotify:artist:' + artistResult.id)
-        .then((result) => {
-          defer.resolve(result);
-        })
-        .fail((error) => {
-          defer.reject(error);
-        });
-    } else {
-      defer.reject('No artist found');
-    }
+  this.spotifyCheckAccessToken().then(() => {
+    this.spotifyApi.search(artistName, ['artist']).then((results) => {
+      if (results.body.hasOwnProperty('artists') && results.body.artists.items.length > 0) {
+        const artistResult = results.body.artists.items[0];
+        this.listWebArtist('spotify:artist:' + artistResult.id)
+          .then((result) => {
+            defer.resolve(result);
+          })
+          .fail((error) => {
+            defer.reject(error);
+          });
+      } else {
+        defer.reject('No artist found');
+      }
+    });
   });
   return defer.promise;
 };
 
 ControllerSpotify.prototype.searchAlbumByName = function (albumName) {
-  var self = this;
-  var defer = libQ.defer();
+  const defer = libQ.defer();
 
-  var spotifyDefer = self.spotifyApi.search(albumName, ['album']);
-  spotifyDefer.then((results) => {
-    if (results.body.hasOwnProperty('albums') && results.body.albums.items.length > 0) {
-      var albumResult = results.body.albums.items[0];
-      self
-        .listWebAlbum('spotify:album:' + albumResult.id)
-        .then((result) => {
-          defer.resolve(result);
-        })
-        .fail((error) => {
-          defer.reject(error);
-        });
-    } else {
-      defer.reject('No album found');
-    }
+  this.spotifyCheckAccessToken().then(() => {
+    this.spotifyApi.search(albumName, ['album']).then((results) => {
+      if (results.body.hasOwnProperty('albums') && results.body.albums.items.length > 0) {
+        const albumResult = results.body.albums.items[0];
+        this.listWebAlbum('spotify:album:' + albumResult.id)
+          .then((result) => {
+            defer.resolve(result);
+          })
+          .fail((error) => {
+            defer.reject(error);
+          });
+      } else {
+        defer.reject('No album found');
+      }
+    });
   });
   return defer.promise;
 };
 
 ControllerSpotify.prototype.goto = function (data) {
-  var self = this;
-
   if (data.type == 'artist') {
-    return self.searchArtistByName(data.value);
+    return this.searchArtistByName(data.value);
   } else if (data.type == 'album') {
     return this.searchAlbumByName(data.value);
   }
