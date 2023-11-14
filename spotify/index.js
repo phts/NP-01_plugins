@@ -2084,23 +2084,36 @@ ControllerSpotify.prototype.listArtistTracks = function (id) {
 };
 
 ControllerSpotify.prototype.listArtistAlbums = async function (id) {
+  let albums = [];
+  await this.spotifyCheckAccessToken();
+  await fetchPagedData(
+    this.spotifyApi,
+    'getArtistAlbums',
+    { requiredArgs: [id] },
+    {
+      onData: (items) => {
+        albums = [
+          ...albums,
+          ...items.map((album) => ({
+            service: 'spop',
+            type: 'folder-album',
+            title: album.name,
+            albumart: this._getAlbumArt(album),
+            uri: album.uri,
+            year: parseYear(album),
+            group: album.album_group,
+          })),
+        ];
+      },
+    }
+  );
+
   const GROUP_ORDER = {
     album: 1,
     single: 2,
     compilation: 3,
     appears_on: 4,
   };
-  await this.spotifyCheckAccessToken();
-  const response = await this.spotifyApi.getArtistAlbums(id, { limit: 50 });
-  const albums = response.body.items.map((album) => ({
-    service: 'spop',
-    type: 'folder-album',
-    title: album.name,
-    albumart: this._getAlbumArt(album),
-    uri: album.uri,
-    year: parseYear(album),
-    group: album.album_group,
-  }));
   albums.sort((a, b) => {
     if (a.group !== b.group) {
       return GROUP_ORDER[a.group] - GROUP_ORDER[b.group];
