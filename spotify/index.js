@@ -236,12 +236,14 @@ ControllerSpotify.prototype.resetSpotifyState = function () {
     random: null,
     repeat: null,
     repeatSingle: null,
+    year: null,
+    tracknumber: null,
+    discnumber: null,
   };
 };
 
 ControllerSpotify.prototype.parseEventState = function (event) {
   var self = this;
-
   var pushStateforEvent = false;
 
   // create a switch case which handles types of events
@@ -255,6 +257,9 @@ ControllerSpotify.prototype.parseEventState = function (event) {
       self.state.album = event.data.album_name;
       self.state.albumart = event.data.album_cover_url;
       self.state.seek = event.data.position;
+      self.state.year = this.parseMetadataYear(event.data.release_date);
+      self.state.tracknumber = event.data.track_number;
+      self.state.discnumber = event.data.disc_number;
       pushStateforEvent = false;
       break;
     case 'will_play':
@@ -360,6 +365,11 @@ ControllerSpotify.prototype.initializeSpotifyPlaybackInVolatileMode = function (
   setTimeout(() => {
     ignoreStopEvent = false;
   }, 2000);
+};
+
+ControllerSpotify.prototype.parseMetadataYear = (release_date) => {
+  const match = release_date.match(/year:(\d+)/);
+  return match ? match[1] : null;
 };
 
 ControllerSpotify.prototype.parseDuration = function (spotifyDuration) {
