@@ -1,4 +1,4 @@
-# PHTS NP-01: Volumio plugin sources
+# PHTS NP-01: Plugins
 
 Modified [Volumio plugins][volumio-plugins-sources] which are used by [PHTS NP-01].
 
