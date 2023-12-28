@@ -1689,7 +1689,7 @@ ControllerSpotify.prototype.getTopTracks = function (curUri) {
               albumart: self._getAlbumArt(track.album),
               uri: track.uri,
               year: parseYear(track.album),
-              trucknumber: track.trucknumber,
+              tracknumber: track.track_number,
             });
           }
         }
@@ -1740,7 +1740,7 @@ ControllerSpotify.prototype.getRecentTracks = function (curUri) {
               albumart: self._getAlbumArt(track.album),
               uri: track.uri,
               year: parseYear(track.album),
-              trucknumber: track.trucknumber,
+              tracknumber: track.track_number,
             });
           }
         }
@@ -2213,7 +2213,7 @@ ControllerSpotify.prototype.getArtistAlbumTracks = function (id) {
                 albumart: self._getAlbumArt(album),
                 uri: track.uri,
                 year: parseYear(album),
-                trucknumber: track.trucknumber,
+                tracknumber: track.track_number,
               });
             }
           }
@@ -2288,7 +2288,7 @@ ControllerSpotify.prototype.getAlbumTracks = function (id) {
               trackType: 'spotify',
               duration: Math.trunc(track.duration_ms / 1000),
               year: parseYear(results.body),
-              trucknumber: track.trucknumber,
+              tracknumber: track.track_number,
             });
           }
         }
@@ -2337,7 +2337,7 @@ ControllerSpotify.prototype.getPlaylistTracks = function (userId, playlistId) {
                     : '',
                 duration: Math.trunc(track.duration_ms / 1000),
                 year: parseYear(track.album),
-                trucknumber: track.trucknumber,
+                tracknumber: track.track_number,
               };
               response.push(item);
             }
@@ -2387,7 +2387,7 @@ ControllerSpotify.prototype.getArtistTopTracks = function (id) {
             trackType: 'spotify',
             uri: track.uri,
             year: parseYear(track.album),
-            trucknumber: track.trucknumber,
+            tracknumber: track.track_number,
           });
         }
       }
@@ -2530,7 +2530,7 @@ ControllerSpotify.prototype.getTrack = function (id) {
           codec: 'ogg',
           trackType: 'spotify',
           year: parseYear(track.album),
-          trucknumber: track.trucknumber,
+          tracknumber: track.track_number,
         };
         response.push(item);
         this.debugLog('GET TRACK: ' + JSON.stringify(response));
