@@ -63,7 +63,7 @@ ControllerSpotify.prototype.onVolumioStart = function () {
   const configFile = this.commandRouter.pluginManager.getConfigurationFile(this.context, 'config.json');
   this.config = new (require('v-conf'))();
   this.config.loadFile(configFile);
-
+  this.config.set('shared_device', this.config.get('shared_device', true));
   return libQ.resolve();
 };
 
@@ -109,7 +109,7 @@ ControllerSpotify.prototype.getUIConfig = function () {
       __dirname + '/UIConfig.json'
     )
     .then(function (uiconf) {
-      const credentials_type = self.config.get('credentials_type', 'zeroconf');
+      const credentials_type = self.config.get('credentials_type', null);
       if (self.loggedInUserId !== undefined && credentials_type === 'spotify_token') {
         uiconf.sections[1].content[0].hidden = true;
         uiconf.sections[1].content[1].hidden = false;
@@ -128,6 +128,8 @@ ControllerSpotify.prototype.getUIConfig = function () {
       const icon = self.config.get('icon', 'avr');
       uiconf.sections[2].content[3].value.value = icon;
       uiconf.sections[2].content[3].value.label = self.getLabelForSelect(uiconf.sections[2].content[3].options, icon);
+
+      uiconf.sections[2].content[4].value = self.config.get('shared_device');
 
       defer.resolve(uiconf);
     })
@@ -734,27 +736,28 @@ ControllerSpotify.prototype.createConfigFile = function () {
     externalVolume = false;
   }
   const normalisationPregain = self.config.get('normalisation_pregain', '1.0');
+  const sharedDevice = self.config.get('shared_device');
 
   let conf = template
     .replace('${device_name}', devicename)
     .replace('${bitrate_number}', selectedBitrate)
     .replace('${device_type}', icon)
     .replace('${external_volume}', externalVolume)
-    .replace('${normalisation_pregain}', normalisationPregain);
+    .replace('${normalisation_pregain}', normalisationPregain)
+    .replace('${zeroconf_enabled}', sharedDevice);
 
-  const credentials_type = self.config.get('credentials_type', 'zeroconf');
+  const credentials_type = self.config.get('credentials_type', null);
   const logged_user_id = self.config.get('logged_user_id', '');
   const access_token = self.config.get('access_token', '');
 
   if (credentials_type === 'spotify_token' && logged_user_id !== '' && access_token !== '') {
-    conf += 'credentials: ' + os.EOL;
-    conf += '  type: spotify_token' + os.EOL;
-    conf += '  spotify_token:' + os.EOL;
-    conf += '    username: "' + logged_user_id + '"' + os.EOL;
-    conf += '    access_token: "' + access_token + '"';
-  } else {
-    conf += 'credentials: ' + os.EOL;
-    conf += '  type: zeroconf' + os.EOL;
+    conf += `\
+credentials:
+  type: spotify_token
+  spotify_token:
+    username: "${logged_user_id}"
+    access_token: "${access_token}"
+`;
   }
 
   fs.writeFile(configFileDestinationPath, conf, (err) => {
@@ -807,6 +810,7 @@ ControllerSpotify.prototype.saveGoLibrespotSettings = function (data, avoidBroad
   if (data.normalisation_pregain && data.normalisation_pregain.value !== undefined) {
     self.config.set('normalisation_pregain', data.normalisation_pregain.value);
   }
+  self.config.set('shared_device', !!data.shared_device);
 
   self.selectedBitrate = self.config.get('bitrate_number', '320').toString();
   self.initializeLibrespotDaemon();
@@ -961,7 +965,7 @@ ControllerSpotify.prototype.resetSpotifyCredentials = function () {
   self.config.set('logged_user_id', '');
   self.config.set('access_token', '');
   self.config.set('refresh_token', '');
-  self.config.set('credentials_type', 'zeroconf');
+  self.config.set('credentials_type', null);
 
   if (self.spotifyApi) {
     self.spotifyApi.resetCredentials();
