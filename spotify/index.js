@@ -2,7 +2,6 @@
 
 var libQ = require('kew');
 var fs = require('fs-extra');
-var config = new (require('v-conf'))();
 var superagent = require('superagent');
 var os = require('os');
 var websocket = require('ws');
@@ -10,7 +9,6 @@ var path = require('path');
 var SpotifyWebApi = require('spotify-web-api-node');
 var io = require('socket.io-client');
 var exec = require('child_process').exec;
-var execSync = require('child_process').execSync;
 var NodeCache = require('node-cache');
 var os = require('os');
 const { parseYear } = require('./helpers');
@@ -20,12 +18,6 @@ var configFileDestinationPath = '/tmp/go-librespot-config.yml';
 var credentialsPath = '/data/configuration/music_service/spop/spotifycredentials.json';
 var spotifyDaemonPort = '9879';
 var spotifyLocalApiEndpointBase = 'http://127.0.0.1:' + spotifyDaemonPort;
-var stateSocket = undefined;
-
-var selectedBitrate;
-var loggedInUsername;
-var loggedInUserId;
-var userCountry;
 var seekTimer;
 var restartTimeout;
 var wsConnectionStatus = 'started';
