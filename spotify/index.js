@@ -756,8 +756,8 @@ ControllerSpotify.prototype.createConfigFile = function () {
     conf += '    username: "' + logged_user_id + '"' + os.EOL;
     conf += '    access_token: "' + access_token + '"';
   } else {
-    defer.resolve('');
-    this.logger.info('Spotify config file written');
+    conf += 'credentials: ' + os.EOL;
+    conf += '  type: zeroconf' + os.EOL;
   }
 
   fs.writeFile(configFileDestinationPath, conf, (err) => {
