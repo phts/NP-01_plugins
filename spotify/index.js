@@ -10,7 +10,6 @@ var SpotifyWebApi = require('spotify-web-api-node');
 var io = require('socket.io-client');
 var exec = require('child_process').exec;
 var NodeCache = require('node-cache');
-var os = require('os');
 const { parseYear } = require('./helpers');
 const { fetchPagedData, rateLimitedCall } = require('./utils/extendedSpotifyApi');
 
