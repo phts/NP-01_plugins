@@ -25,16 +25,23 @@ for arg in "$@"; do
   if [ "$arg" == "--install" ]; then
     NEED_INSTALL=true
   fi
+  if [ "$arg" == "--uninstall" ]; then
+    NEED_UNINSTALL=true
+  fi
   if [ "$arg" == "--restart" ]; then
     NEED_RESTART=true
   fi
 done
 
-if [ "$NEED_INSTALL" == "true" ]; then
+if [ "${NEED_INSTALL}" == "true" ]; then
   ssh volumio "sudo -S bash '${PLUGIN_DIR}/install.sh'"
 fi
 
-if [ "$NEED_RESTART" == "true" ]; then
+if [ "${NEED_UNINSTALL}" == "true" ]; then
+  ssh volumio "sudo -S bash '${PLUGIN_DIR}/uninstall.sh'"
+fi
+
+if [ "${NEED_RESTART}" == "true" ]; then
   ssh volumio 'sudo systemctl restart volumio'
   echo "Restarting..."
 fi
