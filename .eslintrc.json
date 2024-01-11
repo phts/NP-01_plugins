@@ -1,0 +1,19 @@
+{
+  "extends": ["@phts", "@phts/eslint-config/addons/node"],
+  "parser": "@babel/eslint-parser",
+  "parserOptions": {
+    "requireConfigFile": false
+  },
+  "rules": {
+    "no-async-promise-executor": "warn",
+    "no-constant-condition": "warn",
+    "no-unused-vars": "warn",
+    "strict": "off"
+  },
+  "overrides": [
+    {
+      "files": "*",
+      "extends": "@phts/eslint-config/addons/prettier"
+    }
+  ]
+}
