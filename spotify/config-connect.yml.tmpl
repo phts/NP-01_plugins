@@ -1,9 +1,11 @@
 log_level: trace
-device_name: "🔒 ${device_name}"
-server_port: 9879
+device_name: "${device_name}"
+server_port: 9880
 audio_device: "volumio"
 device_type: "${device_type}"
 bitrate: ${bitrate_number}
 external_volume: ${external_volume}
 normalisation_disabled: ${normalisation_disabled}
 normalisation_pregain: ${normalisation_pregain}
+credentials:
+  type: zeroconf

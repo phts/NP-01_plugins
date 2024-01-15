@@ -1,6 +1,5 @@
 'use strict';
 
-const os = require('os');
 const path = require('path');
 const libQ = require('kew');
 const fs = require('fs-extra');
@@ -13,16 +12,36 @@ const NodeCache = require('node-cache');
 const {parseYear} = require('./helpers');
 const {fetchPagedData, rateLimitedCall} = require('./utils/extendedSpotifyApi');
 
-const configFileDestinationPath = '/tmp/go-librespot-config.yml';
-const credentialsPath = '/data/configuration/music_service/spop/spotifycredentials.json';
-const spotifyDaemonPort = '9879';
-const spotifyLocalApiEndpointBase = 'http://127.0.0.1:' + spotifyDaemonPort;
+const CREDENTIALS_PATH = '/data/configuration/music_service/spop/spotifycredentials.json';
 let seekTimer;
-let restartTimeout;
-let wsConnectionStatus = 'started';
 
 // State management
-let ws;
+const ws = {
+    volumio: {
+        websocket: undefined,
+        status: 'stopped',
+        port: '9879',
+        configPath: '/tmp/go-librespot-config.yml',
+        restartTimeout: null,
+        service: 'go-librespot-daemon.service',
+        apiDomain: 'http://127.0.0.1:9879',
+    },
+    connect: {
+        websocket: undefined,
+        status: 'stopped',
+        port: '9880',
+        configPath: '/tmp/go-librespot-connect-config.yml',
+        restartTimeout: null,
+        service: 'go-librespot-connect-daemon.service',
+        apiDomain: 'http://127.0.0.1:9880',
+    },
+};
+const PLAYBACK_MODE_TO_WS_MAP = {
+    'connect-shared': 'connect',
+    'connect-signedin': 'volumio',
+    volumio: 'volumio',
+};
+let playbackMode = null;
 let currentVolumioState;
 let currentSpotifyVolume;
 let currentVolumioVolume;
@@ -51,11 +70,9 @@ function ControllerSpotify(context) {
 }
 
 ControllerSpotify.prototype.onVolumioStart = function () {
-    const self = this;
     const configFile = this.commandRouter.pluginManager.getConfigurationFile(this.context, 'config.json');
     this.config = new (require('v-conf'))();
     this.config.loadFile(configFile);
-
     return libQ.resolve();
 };
 
@@ -67,8 +84,9 @@ ControllerSpotify.prototype.onStop = function () {
     const self = this;
     const defer = libQ.defer();
 
-    self.goLibrespotDaemonWsConnection('stop');
-    self.stopLibrespotDaemon();
+    self.goLibrespotDaemonWsConnection('volumio', 'stop');
+    self.stopLibrespotDaemon('volumio');
+    self.disableSharedConnect();
     self.stopSocketStateListener();
     self.removeToBrowseSources();
 
@@ -101,11 +119,12 @@ ControllerSpotify.prototype.getUIConfig = function () {
             __dirname + '/UIConfig.json'
         )
         .then(function (uiconf) {
-            const credentials_type = self.config.get('credentials_type', 'zeroconf');
+            const credentials_type = self.config.get('credentials_type', null);
             if (self.loggedInUserId !== undefined && credentials_type === 'spotify_token') {
                 uiconf.sections[1].content[0].hidden = true;
                 uiconf.sections[1].content[1].hidden = false;
             }
+
             const bitrateNumber = self.config.get('bitrate_number', 320);
             uiconf.sections[2].content[0].value.value = bitrateNumber;
             uiconf.sections[2].content[0].value.label = self.getLabelForSelect(
@@ -129,6 +148,8 @@ ControllerSpotify.prototype.getUIConfig = function () {
                 icon
             );
 
+            uiconf.sections[2].content[5].value = self.config.get('shared_device', false);
+
             defer.resolve(uiconf);
         })
         .fail(function (error) {
@@ -151,57 +172,61 @@ ControllerSpotify.prototype.getAdditionalConf = function (type, controller, data
 
 // Controls
 
-ControllerSpotify.prototype.goLibrespotDaemonWsConnection = function (action) {
-    const self = this;
-
+ControllerSpotify.prototype.goLibrespotDaemonWsConnection = function (type, action) {
     if (action === 'start') {
-        wsConnectionStatus = 'started';
-        self.initializeWsConnection();
+        this.initializeWsConnection(type);
+        ws[type].status = 'started';
     } else if (action === 'stop') {
-        if (ws) {
-            ws.terminate();
-            ws = undefined;
-        }
-        wsConnectionStatus = 'stopped';
+        this.terminateWsConnection(type);
+        ws[type].status = 'stopped';
     } else if (action === 'restart') {
-        if (wsConnectionStatus === 'started') {
-            if (restartTimeout) {
-                clearTimeout(restartTimeout);
-            }
-            restartTimeout = setTimeout(() => {
-                self.initializeWsConnection();
-                restartTimeout = undefined;
+        if (ws[type].status === 'started') {
+            clearTimeout(ws[type].restartTimeout);
+            ws[type].restartTimeout = setTimeout(() => {
+                this.initializeWsConnection(type);
+                ws[type].restartTimeout = undefined;
+                ws[type].status = 'started';
             }, 3000);
         }
     }
 };
 
-ControllerSpotify.prototype.initializeWsConnection = function () {
+ControllerSpotify.prototype.terminateWsConnection = function (type) {
+    this.logger.info(`Terminate connection to go-librespot websocket (${type} mode)`);
+    if (!ws[type].websocket) {
+        return;
+    }
+    ws[type].websocket.terminate();
+    ws[type].websocket = undefined;
+};
+
+ControllerSpotify.prototype.initializeWsConnection = function (type) {
     const self = this;
+    this.terminateWsConnection(type);
+    self.logger.info(`Initializing connection to go-librespot websocket (${type} mode)`);
 
-    self.logger.info('Initializing connection to go-librespot Websocket');
-
-    ws = new websocket('ws://localhost:' + spotifyDaemonPort + '/events');
-    ws.on('error', function (error) {
-        self.logger.info('Error connecting to go-librespot Websocket: ' + error);
-        self.goLibrespotDaemonWsConnection('restart');
+    const w = new websocket('ws://localhost:' + ws[type].port + '/events');
+    w.on('error', function (error) {
+        self.logger.info(`Error connecting to go-librespot websocket (${type} mode): ${error}`);
+        self.goLibrespotDaemonWsConnection(type, 'restart');
     });
-
-    ws.on('message', function message(data) {
+    w.on('message', function message(data) {
         self.debugLog('received: ' + data);
-        self.parseEventState(JSON.parse(data));
+        self.parseEventState(JSON.parse(data), type);
+    });
+    w.on('open', function () {
+        self.logger.info(`Connection to go-librespot websocket (${type} mode) established`);
+        if (type === 'volumio') {
+            setTimeout(() => {
+                self.initializeSpotifyControls();
+            }, 3000);
+        }
+    });
+    w.on('close', function () {
+        self.logger.info(`Connection to go-librespot websocket (${type} mode) closed`);
     });
 
-    ws.on('open', function () {
-        self.logger.info('Connection to go-librespot Websocket established');
-        setTimeout(() => {
-            self.initializeSpotifyControls();
-        }, 3000);
-        ws.on('close', function () {
-            self.logger.info('Connection to go-librespot Websocket closed');
-            self.goLibrespotDaemonWsConnection('restart');
-        });
-    });
+    ws[type].websocket = w;
 };
 
 ControllerSpotify.prototype.initializeSpotifyControls = function () {
@@ -241,7 +266,7 @@ ControllerSpotify.prototype.resetSpotifyState = function () {
     };
 };
 
-ControllerSpotify.prototype.parseEventState = function (event) {
+ControllerSpotify.prototype.parseEventState = function (event, type) {
     const self = this;
     let pushStateforEvent = false;
 
@@ -267,7 +292,7 @@ ControllerSpotify.prototype.parseEventState = function (event) {
             break;
         case 'playing':
             self.state.status = 'play';
-            self.identifyPlaybackMode(event.data);
+            self.identifyPlaybackMode(event.data, type);
             setTimeout(() => {
                 self.pushState();
             }, 300);
@@ -275,7 +300,7 @@ ControllerSpotify.prototype.parseEventState = function (event) {
             break;
         case 'paused':
             self.state.status = 'pause';
-            self.identifyPlaybackMode(event.data);
+            self.identifyPlaybackMode(event.data, type);
             pushStateforEvent = true;
             break;
         case 'stopped':
@@ -329,7 +354,7 @@ ControllerSpotify.prototype.parseEventState = function (event) {
     }
 };
 
-ControllerSpotify.prototype.identifyPlaybackMode = function (data) {
+ControllerSpotify.prototype.identifyPlaybackMode = function (data, type) {
     if (unsettingVolatile) {
         // Ignore all unnecessary events (several "pause" events) from spotify during
         // switching from volatile mode to prevent volumio from switching back to volatile mode
@@ -341,6 +366,7 @@ ControllerSpotify.prototype.identifyPlaybackMode = function (data) {
     // play_origin = 'your_library' or 'playlist' means that Spotify is playing in volatile mode
     const isVolumioMode = data && data.play_origin && data.play_origin === 'go-librespot';
 
+    playbackMode = isVolumioMode ? 'volumio' : type === 'connect' ? 'connect-shared' : 'connect-signedin';
     // Refactor in order to handle the case where current service is spop but not in volatile mode
     if (
         (!isVolumioMode && currentVolumioState.service !== 'spop') ||
@@ -410,9 +436,7 @@ ControllerSpotify.prototype.libRespotGoUnsetVolatile = function () {
 
     if (currentVolumioState && currentVolumioState.status && currentVolumioState.status !== 'stop') {
         this.logger.info('Setting Spotify stop after unset volatile call');
-        setTimeout(() => {
-            this.stop();
-        }, 500);
+        this.stop();
     }
 };
 
@@ -437,9 +461,9 @@ ControllerSpotify.prototype.pushState = function (state) {
 
 ControllerSpotify.prototype.sendSpotifyLocalApiCommand = function (commandPath) {
     this.logger.info('Sending Spotify command to local API: ' + commandPath);
-
+    const apiDomain = ws[PLAYBACK_MODE_TO_WS_MAP[playbackMode]].apiDomain;
     superagent
-        .post(spotifyLocalApiEndpointBase + commandPath)
+        .post(apiDomain + commandPath)
         .accept('application/json')
         .then((results) => {})
         .catch((error) => {
@@ -449,9 +473,9 @@ ControllerSpotify.prototype.sendSpotifyLocalApiCommand = function (commandPath) 
 
 ControllerSpotify.prototype.sendSpotifyLocalApiCommandWithPayload = function (commandPath, payload) {
     this.logger.info('Sending Spotify command with payload to local API: ' + commandPath);
-
+    const apiDomain = ws[PLAYBACK_MODE_TO_WS_MAP[playbackMode]].apiDomain;
     superagent
-        .post(spotifyLocalApiEndpointBase + commandPath)
+        .post(apiDomain + commandPath)
         .accept('application/json')
         .send(payload)
         .then((results) => {})
@@ -634,6 +658,7 @@ ControllerSpotify.prototype.startSocketStateListener = function () {
 
     self.stateSocket.on('pushState', function (data) {
         currentVolumioState = data;
+        playbackMode = data.volatile ? playbackMode : 'volumio';
         if (data && data.volume && !data.disableVolumeControl) {
             let currentVolume = data.volume;
             if (data.mute === true) {
@@ -656,40 +681,42 @@ ControllerSpotify.prototype.stopSocketStateListener = function () {
 // DAEMON MANAGEMENT
 
 ControllerSpotify.prototype.initializeLibrespotDaemon = function () {
-    const self = this;
     const defer = libQ.defer();
-
-    this.selectedBitrate = self.config.get('bitrate_number', '320').toString();
-
-    self.createConfigFile()
-        .then(function () {
-            return self.startLibrespotDaemon();
+    this.selectedBitrate = this.config.get('bitrate_number', '320').toString();
+    this.createConfigFile({tmplFilename: 'config.yml.tmpl', outFile: ws.volumio.configPath, includeCredentials: true})
+        .then(() => this.createConfigFile({tmplFilename: 'config-connect.yml.tmpl', outFile: ws.connect.configPath}))
+        .then(() => this.startLibrespotDaemon('volumio'))
+        .then(() => {
+            this.goLibrespotDaemonWsConnection('volumio', 'start');
+            return Promise.resolve();
         })
-        .then(function () {
-            self.logger.info('go-librespot daemon successfully initialized');
-            setTimeout(() => {
-                self.goLibrespotDaemonWsConnection('start');
-                defer.resolve('');
-            }, 3000);
+        .then(async () => {
+            if (this.config.get('shared_device', false)) {
+                await this.enableSharedConnect();
+            } else {
+                await this.disableSharedConnect();
+            }
+            defer.resolve('');
         })
-        .fail(function (e) {
+        .catch((e) => {
             defer.reject(e);
-            self.logger.error('Error initializing go-librespot daemon: ' + e);
+            this.logger.error('Error initializing go-librespot daemon: ' + e);
         });
 
     return defer.promise;
 };
 
-ControllerSpotify.prototype.startLibrespotDaemon = function () {
+ControllerSpotify.prototype.startLibrespotDaemon = function (type) {
     const self = this;
     const defer = libQ.defer();
 
-    exec('/usr/bin/sudo systemctl restart go-librespot-daemon.service', function (error, stdout, stderr) {
+    exec(`/usr/bin/sudo systemctl restart ${ws[type].service}`, function (error) {
         if (error) {
-            self.logger.error('Cannot start Go-librespot Daemon: ' + error);
+            self.logger.error(`Cannot start ${ws[type].service} daemon: ${error}`);
             defer.reject(error);
         } else {
             setTimeout(() => {
+                self.logger.info(`${ws[type].service} daemon successfully started`);
                 defer.resolve();
             }, 3000);
         }
@@ -698,13 +725,13 @@ ControllerSpotify.prototype.startLibrespotDaemon = function () {
     return defer.promise;
 };
 
-ControllerSpotify.prototype.stopLibrespotDaemon = function () {
+ControllerSpotify.prototype.stopLibrespotDaemon = function (type) {
     const self = this;
     const defer = libQ.defer();
 
-    exec('/usr/bin/sudo systemctl stop go-librespot-daemon.service', function (error, stdout, stderr) {
+    exec(`/usr/bin/sudo systemctl stop ${ws[type].service}`, function (error) {
         if (error) {
-            self.logger.error('Cannot stop Go-librespot Daemon: ' + error);
+            self.logger.error(`Cannot stop ${ws[type].service} daemon: ${error}`);
             defer.reject(error);
         } else {
             setTimeout(() => {
@@ -716,16 +743,16 @@ ControllerSpotify.prototype.stopLibrespotDaemon = function () {
     return defer.promise;
 };
 
-ControllerSpotify.prototype.createConfigFile = function () {
+ControllerSpotify.prototype.createConfigFile = async function ({tmplFilename, outFile, includeCredentials}) {
     const self = this;
-    const defer = libQ.defer();
 
     this.logger.info('Creating Spotify config file');
 
     try {
-        var template = fs.readFileSync(path.join(__dirname, 'config.yml.tmpl'), {encoding: 'utf8'});
+        var template = fs.readFileSync(path.join(__dirname, tmplFilename), {encoding: 'utf8'});
     } catch (e) {
         this.logger.error('Failed to read template file: ' + e);
+        throw e;
     }
 
     const devicename = this.commandRouter.sharedVars.get('system.name');
@@ -746,38 +773,38 @@ ControllerSpotify.prototype.createConfigFile = function () {
         .replace('${normalisation_disabled}', !self.config.get('normalisation_enabled', false))
         .replace('${normalisation_pregain}', normalisationPregain);
 
-    const credentials_type = self.config.get('credentials_type', 'zeroconf');
+    const credentials_type = self.config.get('credentials_type', null);
     const logged_user_id = self.config.get('logged_user_id', '');
     const access_token = self.config.get('access_token', '');
 
-    if (credentials_type === 'spotify_token' && logged_user_id !== '' && access_token !== '') {
-        conf += 'credentials: ' + os.EOL;
-        conf += '  type: spotify_token' + os.EOL;
-        conf += '  spotify_token:' + os.EOL;
-        conf += '    username: "' + logged_user_id + '"' + os.EOL;
-        conf += '    access_token: "' + access_token + '"';
-    } else {
-        conf += 'credentials: ' + os.EOL;
-        conf += '  type: zeroconf' + os.EOL;
+    if (includeCredentials && credentials_type === 'spotify_token' && logged_user_id !== '' && access_token !== '') {
+        conf += `\
+credentials:
+  type: spotify_token
+  spotify_token:
+    username: "${logged_user_id}"
+    access_token: "${access_token}"
+`;
     }
 
-    fs.writeFile(configFileDestinationPath, conf, (err) => {
-        if (err) {
-            defer.reject(err);
-            this.logger.error('Failed to write spotify config file: ' + err);
-        } else {
-            defer.resolve('');
-            this.logger.info('Spotify config file written');
-        }
+    return new Promise((resolve, reject) => {
+        fs.writeFile(outFile, conf, (err) => {
+            if (err) {
+                reject(err);
+                this.logger.error('Failed to write spotify config file: ' + err);
+            } else {
+                resolve('');
+                this.logger.info('Spotify config file written');
+            }
+        });
     });
-    return defer.promise;
 };
 
 ControllerSpotify.prototype.isOauthLoginAlreadyConfiguredOnDaemon = function () {
     const self = this;
 
     try {
-        var credentialsFile = fs.readFileSync(credentialsPath, {encoding: 'utf8'}).toString();
+        var credentialsFile = fs.readFileSync(CREDENTIALS_PATH, {encoding: 'utf8'}).toString();
     } catch (e) {
         self.logger.error('Failed to read credentials file: ' + e);
     }
@@ -804,6 +831,7 @@ ControllerSpotify.prototype.saveGoLibrespotSettings = function (data) {
     if (data.normalisation_pregain && data.normalisation_pregain.value !== undefined) {
         this.config.set('normalisation_pregain', data.normalisation_pregain.value);
     }
+    this.config.set('shared_device', !!data.shared_device);
 
     this.selectedBitrate = this.config.get('bitrate_number', '320').toString();
     this.initializeLibrespotDaemon();
@@ -955,7 +983,7 @@ ControllerSpotify.prototype.resetSpotifyCredentials = function () {
     self.config.set('logged_user_id', '');
     self.config.set('access_token', '');
     self.config.set('refresh_token', '');
-    self.config.set('credentials_type', 'zeroconf');
+    self.config.set('credentials_type', null);
 
     if (self.spotifyApi) {
         self.spotifyApi.resetCredentials();
@@ -971,7 +999,7 @@ ControllerSpotify.prototype.deleteCredentialsFile = function () {
 
     self.logger.info('Deleting Spotify credentials File');
     try {
-        fs.unlinkSync(credentialsPath);
+        fs.unlinkSync(CREDENTIALS_PATH);
     } catch (err) {
         self.logger.error('Failed to delete credentials file ' + err);
     }
@@ -2871,7 +2899,7 @@ ControllerSpotify.prototype.getSpotifyVolume = function () {
 
     self.logger.info('Getting Spotify volume');
     superagent
-        .get(spotifyLocalApiEndpointBase + '/player/volume')
+        .get(ws.volumio.apiDomain + '/player/volume')
         .accept('application/json')
         .then((results) => {
             if (results && results.body && results.body.value) {
@@ -2879,4 +2907,14 @@ ControllerSpotify.prototype.getSpotifyVolume = function () {
                 currentSpotifyVolume = results.body.value;
             }
         });
+};
+
+ControllerSpotify.prototype.enableSharedConnect = async function () {
+    await this.startLibrespotDaemon('connect');
+    this.goLibrespotDaemonWsConnection('connect', 'start');
+};
+
+ControllerSpotify.prototype.disableSharedConnect = async function () {
+    this.goLibrespotDaemonWsConnection('connect', 'stop');
+    await this.stopLibrespotDaemon('connect');
 };

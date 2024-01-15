@@ -1,7 +1,5 @@
 #!/bin/bash
 
-echo "Installing Go-librespot"
-
 ARCH=$(cat /etc/os-release | grep ^VOLUMIO_ARCH | tr -d 'VOLUMIO_ARCH="')
 
 if [ $ARCH = "arm" ]; then
@@ -49,34 +47,31 @@ DAEMON_DOWNLOAD_URL=$DAEMON_BASE_URL$VERSION/$DAEMON_ARCHIVE
 DAEMON_DOWNLOAD_PATH=/home/volumio/$DAEMON_ARCHIVE
 
 echo "Dowloading daemon"
-systemctl stop go-librespot-daemon.service
+DAEMON_VOLUMIO_MODE=go-librespot-daemon.service
+DAEMON_CONNECT_MODE=go-librespot-connect-daemon.service
+systemctl stop ${DAEMON_VOLUMIO_MODE}
+systemctl stop ${DAEMON_CONNECT_MODE}
 wget $DAEMON_DOWNLOAD_URL -O $DAEMON_DOWNLOAD_PATH
 tar xf $DAEMON_DOWNLOAD_PATH -C /usr/bin/ go-librespot
 rm $DAEMON_DOWNLOAD_PATH
 chmod a+x /usr/bin/go-librespot
 
-echo "Creating Start Script"
+echo 'Creating start script for Volumio mode'
 
+LIBRESPOT_VOLUMIO_FILE=/bin/start-go-liberspot.sh
 echo "#!/bin/sh
-
-# Traceback Setting
 export GOTRACEBACK=crash
-
-# Data dir
 DAEMON_DATA_PATH=/data/go-librespot/
 [ -d $DAEMON_DATA_PATH ] || mkdir $DAEMON_DATA_PATH
-
-echo 'Librespot-go daemon starting...'
-/usr/bin/go-librespot -config_path /tmp/go-librespot-config.yml -credentials_path /data/configuration/music_service/spop/spotifycredentials.json" >/bin/start-go-liberspot.sh
-
-chmod a+x /bin/start-go-liberspot.sh
+echo 'Starting librespot-go daemon for Volumio mode...'
+/usr/bin/go-librespot -config_path /tmp/go-librespot-config.yml -credentials_path /data/configuration/music_service/spop/spotifycredentials.json" >${LIBRESPOT_VOLUMIO_FILE}
+chmod a+x ${LIBRESPOT_VOLUMIO_FILE}
 
 echo "[Unit]
-Description = go-librespot Daemon
+Description = go-librespot daemon for Volumio mode
 After = volumio.service
-
 [Service]
-ExecStart=/bin/start-go-liberspot.sh
+ExecStart=${LIBRESPOT_VOLUMIO_FILE}
 Restart=always
 RestartSec=3
 StandardOutput=syslog
@@ -85,7 +80,32 @@ SyslogIdentifier=go-librespot
 User=volumio
 Group=volumio
 [Install]
-WantedBy=multi-user.target" >/lib/systemd/system/go-librespot-daemon.service
+WantedBy=multi-user.target" >/lib/systemd/system/${DAEMON_VOLUMIO_MODE}
+
+echo 'Creating start script for Connect mode'
+LIBRESPOT_CONNECT_FILE=/bin/start-go-librespot-connect.sh
+echo "#!/bin/sh
+export GOTRACEBACK=crash
+DAEMON_DATA_PATH=/data/go-librespot/
+[ -d $DAEMON_DATA_PATH ] || mkdir $DAEMON_DATA_PATH
+echo 'Starting librespot-go daemon for Connect mode...'
+/usr/bin/go-librespot -config_path /tmp/go-librespot-connect-config.yml" >${LIBRESPOT_CONNECT_FILE}
+chmod a+x ${LIBRESPOT_CONNECT_FILE}
+
+echo "[Unit]
+Description = go-librespot daemon for Connect mode
+After = volumio.service
+[Service]
+ExecStart=${LIBRESPOT_CONNECT_FILE}
+Restart=always
+RestartSec=3
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=go-librespot-connect
+User=volumio
+Group=volumio
+[Install]
+WantedBy=multi-user.target" >/lib/systemd/system/${DAEMON_CONNECT_MODE}
 
 systemctl daemon-reload
 

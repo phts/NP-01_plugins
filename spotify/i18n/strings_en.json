@@ -22,6 +22,8 @@
   "APPEARS_ON": "Appears On",
   "TOP_TRACKS": "Popular Tracks",
   "RELATED_ARTISTS": "Fans Also Like",
+  "SHARED_DEVICE": "Share this device across the network",
+  "SHARED_DEVICE_DOC": "If enabled, any Spotify user in the same local network may connect to this device. Otherwise, only user signed-in in Volumio may connect to it.",
   "DEBUG": "Debug mode",
   "DESCDEBUG": "Enable verbose logs",
   "BITRATE": "Bitrate",
