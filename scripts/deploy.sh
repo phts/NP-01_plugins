@@ -21,6 +21,7 @@ for arg in "$@"; do
     scp "${SCRIPT_DIR}/../spotify/utils/extendedSpotifyApi/fetchPagedData.js" volumio:${PLUGIN_DIR}/utils/extendedSpotifyApi/
     scp "${SCRIPT_DIR}/../spotify/utils/extendedSpotifyApi/index.js" volumio:${PLUGIN_DIR}/utils/extendedSpotifyApi/
     scp "${SCRIPT_DIR}/../spotify/utils/extendedSpotifyApi/rateLimitedCall.js" volumio:${PLUGIN_DIR}/utils/extendedSpotifyApi/
+    scp "${SCRIPT_DIR}/../spotify/utils/librespot.js" volumio:${PLUGIN_DIR}/utils/
   fi
   if [ "$arg" == "--install" ]; then
     NEED_INSTALL=true
