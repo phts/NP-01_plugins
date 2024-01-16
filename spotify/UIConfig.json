@@ -70,7 +70,16 @@
       },
       "saveButton": {
         "label": "TRANSLATE.SAVE",
-        "data": ["bitrate", "debug", "normalisation_enabled", "normalisation_pregain", "icon", "shared_device"]
+        "data": [
+          "bitrate",
+          "debug",
+          "normalisation_enabled",
+          "normalisation_pregain",
+          "icon",
+          "shared_device",
+          "shared_device_name",
+          "private_device_name"
+        ]
       },
       "content": [
         {
@@ -194,6 +203,22 @@
           "doc": "TRANSLATE.SHARED_DEVICE_DOC",
           "label": "TRANSLATE.SHARED_DEVICE",
           "value": false
+        },
+        {
+          "id": "shared_device_name",
+          "element": "input",
+          "type": "text",
+          "label": "TRANSLATE.SHARED_DEVICE_NAME",
+          "doc": "TRANSLATE.SHARED_DEVICE_NAME_DOC",
+          "value": ""
+        },
+        {
+          "id": "private_device_name",
+          "element": "input",
+          "type": "text",
+          "label": "TRANSLATE.PRIVATE_DEVICE_NAME",
+          "doc": "TRANSLATE.PRIVATE_DEVICE_NAME_DOC",
+          "value": ""
         }
       ]
     }

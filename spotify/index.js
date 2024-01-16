@@ -73,6 +73,13 @@ ControllerSpotify.prototype.onVolumioStart = function () {
     const configFile = this.commandRouter.pluginManager.getConfigurationFile(this.context, 'config.json');
     this.config = new (require('v-conf'))();
     this.config.loadFile(configFile);
+    if (!this.config.get('shared_device_name', null)) {
+        this.config.set('shared_device_name', this.commandRouter.sharedVars.get('system.name'));
+    }
+    if (!this.config.get('private_device_name', null)) {
+        this.config.set('private_device_name', `🔒 ${this.commandRouter.sharedVars.get('system.name')}`);
+    }
+
     return libQ.resolve();
 };
 
@@ -149,7 +156,8 @@ ControllerSpotify.prototype.getUIConfig = function () {
             );
 
             uiconf.sections[2].content[5].value = self.config.get('shared_device', false);
-
+            uiconf.sections[2].content[6].value = self.config.get('shared_device_name', 'None');
+            uiconf.sections[2].content[7].value = self.config.get('private_device_name', 'None');
             defer.resolve(uiconf);
         })
         .fail(function (error) {
@@ -755,7 +763,7 @@ ControllerSpotify.prototype.createConfigFile = async function ({tmplFilename, ou
         throw e;
     }
 
-    const devicename = this.commandRouter.sharedVars.get('system.name');
+    const deviceName = self.config.get(`${includeCredentials ? 'private' : 'shared'}_device_name`, 'None');
     const selectedBitrate = self.config.get('bitrate_number', '320').toString();
     const icon = self.config.get('icon', 'avr');
     let externalVolume = true;
@@ -766,7 +774,7 @@ ControllerSpotify.prototype.createConfigFile = async function ({tmplFilename, ou
     const normalisationPregain = self.config.get('normalisation_pregain', '0');
 
     let conf = template
-        .replace('${device_name}', devicename)
+        .replace('${device_name}', deviceName)
         .replace('${bitrate_number}', selectedBitrate)
         .replace('${device_type}', icon)
         .replace('${external_volume}', externalVolume)
@@ -832,6 +840,8 @@ ControllerSpotify.prototype.saveGoLibrespotSettings = function (data) {
         this.config.set('normalisation_pregain', data.normalisation_pregain.value);
     }
     this.config.set('shared_device', !!data.shared_device);
+    this.config.set('shared_device_name', data.shared_device_name.trim());
+    this.config.set('private_device_name', data.private_device_name.trim());
 
     this.selectedBitrate = this.config.get('bitrate_number', '320').toString();
     this.initializeLibrespotDaemon();
