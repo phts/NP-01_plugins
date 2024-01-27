@@ -2019,17 +2019,17 @@ ControllerSpotify.prototype.listWebArtist = async function (uri) {
     const topTracksList = {
         availableListViews: ['list'],
         items: [],
-        title: 'Top tracks',
+        title: this.getI18n('TOP_TRACKS'),
     };
     const albumsList = {
         availableListViews: ['list', 'grid'],
         items: [],
-        title: 'Albums',
+        title: this.commandRouter.getI18nString('COMMON.ALBUMS'),
     };
     const relatedArtistsList = {
         availableListViews: ['list'],
         items: [],
-        title: 'Related Artists',
+        title: this.getI18n('RELATED_ARTISTS'),
     };
 
     try {
