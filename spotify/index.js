@@ -1235,7 +1235,15 @@ ControllerSpotify.prototype.handleBrowseUri = function (curUri) {
         } else if (curUri.startsWith('spotify/category')) {
             response = self.listWebCategory(curUri);
         } else if (curUri.startsWith('spotify:artist:')) {
-            response = self.listWebArtist(curUri);
+            // to support legacy lib "kew" in backend
+            response = libQ.defer();
+            self.listWebArtist(curUri)
+                .then((res) => {
+                    response.resolve(res);
+                })
+                .catch((e) => {
+                    response.reject(e);
+                });
         } else {
             self.logger.info('************* Bad browse Uri:' + curUri);
         }
@@ -2002,83 +2010,56 @@ ControllerSpotify.prototype.listWebCategory = function (curUri) {
     return defer.promise;
 };
 
-ControllerSpotify.prototype.listWebArtist = function (curUri) {
-    const self = this;
-
-    const defer = libQ.defer();
-
-    const uriSplitted = curUri.split(':');
-
+ControllerSpotify.prototype.listWebArtist = async function (uri) {
+    const uriSplitted = uri.split(':');
     const artistId = uriSplitted[2];
+    await this.spotifyCheckAccessToken();
 
-    self.spotifyCheckAccessToken().then(function (data) {
-        const response = {
-            navigation: {
-                prev: {
-                    uri: 'spotify',
-                },
-                lists: [
-                    {
-                        availableListViews: ['list'],
-                        items: [],
-                        title: 'Top tracks',
-                    },
-                    {
-                        availableListViews: ['list', 'grid'],
-                        items: [],
-                        title: 'Albums',
-                    },
-                    {
-                        availableListViews: ['list'],
-                        items: [],
-                        title: 'Related Artists',
-                    },
-                ],
+    let info = {};
+    const topTracksList = {
+        availableListViews: ['list'],
+        items: [],
+        title: 'Top tracks',
+    };
+    const albumsList = {
+        availableListViews: ['list', 'grid'],
+        items: [],
+        title: 'Albums',
+    };
+    const relatedArtistsList = {
+        availableListViews: ['list'],
+        items: [],
+        title: 'Related Artists',
+    };
+
+    try {
+        const tracks = await this.listArtistTracks(artistId);
+        topTracksList.items.push(...tracks);
+
+        const albums = await this.listArtistAlbums(artistId);
+        albumsList.items.push(...albums);
+
+        info = await this.getArtistInfo(artistId);
+
+        const relatedArtists = await this.getArtistRelatedArtists(artistId);
+        relatedArtistsList.items.push(...relatedArtists);
+    } catch (e) {
+        // ignore
+    }
+
+    return {
+        navigation: {
+            prev: {
+                uri: 'spotify',
             },
-        };
-        const spotifyDefer = self.listArtistTracks(artistId);
-        spotifyDefer
-            .then(function (results) {
-                for (const i in results) {
-                    response.navigation.lists[0].items.push(results[i]);
-                }
-                return response;
-            })
-            .then(function (results) {
-                return self.listArtistAlbums(artistId);
-            })
-            .then(function (results) {
-                for (const i in results) {
-                    response.navigation.lists[1].items.push(results[i]);
-                }
-                return response;
-            })
-            .then(function (results) {
-                return self.getArtistInfo(artistId);
-            })
-            .then(function (results) {
-                response.navigation.info = results;
-                response.navigation.info.uri = curUri;
-                response.navigation.info.service = 'spop';
-
-                return response;
-            })
-            .then(function (results) {
-                return self.getArtistRelatedArtists(artistId);
-            })
-            .then(function (results) {
-                for (const i in results) {
-                    response.navigation.lists[2].items.push(results[i]);
-                }
-                defer.resolve(response);
-                return response;
-            })
-            .catch(function (error) {
-                defer.resolve(response);
-            });
-    });
-
-    return defer.promise;
+            info: {
+                ...info,
+                uri,
+                service: 'spop',
+            },
+            lists: [topTracksList, albumsList, relatedArtistsList],
+        },
+    };
 };
 
 ControllerSpotify.prototype.listArtistTracks = function (id) {
@@ -2739,7 +2720,7 @@ ControllerSpotify.prototype.searchArtistByName = function (artistName) {
                     .then((result) => {
                         defer.resolve(result);
                     })
-                    .fail((error) => {
+                    .catch((error) => {
                         defer.reject(error);
                     });
             } else {
