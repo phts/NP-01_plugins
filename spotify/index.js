@@ -2057,7 +2057,7 @@ ControllerSpotify.prototype.listWebArtist = async function (uri) {
                 uri,
                 service: 'spop',
             },
-            lists: [topTracksList, albumsList, relatedArtistsList],
+            lists: [albumsList, topTracksList, relatedArtistsList],
         },
     };
 };
