@@ -2014,6 +2014,12 @@ ControllerSpotify.prototype.listWebArtist = async function (uri) {
     const uriSplitted = uri.split(':');
     const artistId = uriSplitted[2];
     await this.spotifyCheckAccessToken();
+    const ALBUM_SECTION_TRANSLATIONS = {
+        album: this.commandRouter.getI18nString('COMMON.ALBUMS'),
+        single: this.getI18n('SINGLES_OR_EP'),
+        compilation: this.getI18n('COMPILATION'),
+        appears_on: this.getI18n('APPEARS_ON'),
+    };
 
     let info = {};
     const topTracksList = {
@@ -2021,11 +2027,7 @@ ControllerSpotify.prototype.listWebArtist = async function (uri) {
         items: [],
         title: this.getI18n('TOP_TRACKS'),
     };
-    const albumsList = {
-        availableListViews: ['list', 'grid'],
-        items: [],
-        title: this.commandRouter.getI18nString('COMMON.ALBUMS'),
-    };
+    let albumSections = [];
     const relatedArtistsList = {
         availableListViews: ['list'],
         items: [],
@@ -2037,14 +2039,26 @@ ControllerSpotify.prototype.listWebArtist = async function (uri) {
         topTracksList.items.push(...tracks);
 
         const albums = await this.listArtistAlbums(artistId);
-        albumsList.items.push(...albums);
+        albumSections = ['album', 'single', 'compilation', 'appears_on']
+            .map((section) => {
+                const items = albums.filter((al) => al.section === section);
+                if (!items.length) {
+                    return null;
+                }
+                return {
+                    availableListViews: ['list', 'grid'],
+                    items,
+                    title: ALBUM_SECTION_TRANSLATIONS[section],
+                };
+            })
+            .filter(Boolean);
 
         info = await this.getArtistInfo(artistId);
 
         const relatedArtists = await this.getArtistRelatedArtists(artistId);
         relatedArtistsList.items.push(...relatedArtists);
     } catch (e) {
-        // ignore
+        this.logger.error('An error occurred while fetching Spotify artist ' + e);
     }
 
     return {
@@ -2057,7 +2071,7 @@ ControllerSpotify.prototype.listWebArtist = async function (uri) {
                 uri,
                 service: 'spop',
             },
-            lists: [albumsList, topTracksList, relatedArtistsList],
+            lists: [...albumSections, topTracksList, relatedArtistsList],
         },
     };
 };
@@ -2098,25 +2112,14 @@ ControllerSpotify.prototype.listArtistAlbums = async function (id) {
                         albumart: this._getAlbumArt(album),
                         uri: album.uri,
                         year: parseYear(album),
-                        group: album.album_group,
+                        section: album.album_group,
                     })),
                 ];
             },
         }
     );
 
-    const GROUP_ORDER = {
-        album: 1,
-        single: 2,
-        compilation: 3,
-        appears_on: 4,
-    };
-    albums.sort((a, b) => {
-        if (a.group !== b.group) {
-            return GROUP_ORDER[a.group] - GROUP_ORDER[b.group];
-        }
-        return a.year > b.year ? 1 : a.year === b.year ? 0 : -1;
-    });
+    albums.sort((a, b) => (a.year > b.year ? 1 : a.year === b.year ? 0 : -1));
     return albums;
 };
 
