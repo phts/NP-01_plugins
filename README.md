@@ -7,6 +7,16 @@ Contains:
 - [podcast]
 - [spotify]
 
+## Differences comparing to original plugins
+
+```sh
+git remote add v https://github.com/volumio/volumio3-backend.git
+git fetch v
+PLUGIN="spotify" # or podcast
+
+git log v/master..origin/master --no-merges --oneline | grep "(${PLUGIN})" | grep -v "style(" | grep -v "style:" | grep -v "chore("
+```
+
 ## Sync with original repo
 
 ```sh
