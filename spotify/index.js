@@ -215,6 +215,7 @@ ControllerSpotify.prototype.resetSpotifyState = function () {
 ControllerSpotify.prototype.parseEventState = function (event, type) {
     const self = this;
     let pushStateforEvent = false;
+    console.log('parseEventState', type, JSON.stringify(event, null, 2));
 
     // create a switch case which handles types of events
     // and updates the state accordingly
@@ -261,6 +262,12 @@ ControllerSpotify.prototype.parseEventState = function (event, type) {
             // self.state.status = 'play';
             pushStateforEvent = false;
             self.alignSpotifyVolumeToVolumioVolume();
+            break;
+        case 'inactive':
+            // On external device selected other device than volumio
+            // TODO: switch from volatile to normal mode
+            self.logger.error('Failed to decode event: ' + event.type);
+            pushStateforEvent = false;
             break;
         case 'volume':
             try {
@@ -313,6 +320,21 @@ ControllerSpotify.prototype.identifyPlaybackMode = function (data, type) {
     const isVolumioMode = data && data.play_origin && data.play_origin === 'go-librespot';
 
     playbackMode = isVolumioMode ? 'volumio' : type === 'connect' ? 'connect-shared' : 'connect-signedin';
+    this.logger.info(
+        'identifyPlaybackMode: ' +
+            JSON.stringify(
+                {
+                    isVolumioMode,
+                    'data.play_origin': data.play_origin,
+                    'currentVolumioState.service': currentVolumioState.service,
+                    'currentVolumioState.volatile': currentVolumioState.volatile,
+                    playbackMode,
+                },
+                null,
+                2
+            )
+    );
+
     // Refactor in order to handle the case where current service is spop but not in volatile mode
     if (
         (!isVolumioMode && currentVolumioState.service !== 'spop') ||
@@ -374,7 +396,7 @@ ControllerSpotify.prototype.parseArtists = function (spotifyArtists) {
 
 ControllerSpotify.prototype.libRespotGoUnsetVolatile = function () {
     this.debugLog('UNSET VOLATILE');
-    this.debugLog(JSON.stringify(currentVolumioState));
+    this.debugLog(JSON.stringify(currentVolumioState, null, 2));
     unsettingVolatile = true;
     setTimeout(() => {
         unsettingVolatile = false;
@@ -408,6 +430,13 @@ ControllerSpotify.prototype.pushState = function (state) {
 ControllerSpotify.prototype.sendSpotifyLocalApiCommand = function (commandPath) {
     this.logger.info('Sending Spotify command to local API: ' + commandPath);
     const apiBaseUrl = this.librespot[PLAYBACK_MODE_TO_WS_MAP[playbackMode]].apiBaseUrl;
+    this.logger.info(
+        JSON.stringify(
+            {playbackMode, apiBaseUrl, 'currentVolumioState.volatile': currentVolumioState.volatile},
+            null,
+            2
+        )
+    );
     superagent
         .post(apiBaseUrl + commandPath)
         .accept('application/json')
@@ -420,6 +449,13 @@ ControllerSpotify.prototype.sendSpotifyLocalApiCommand = function (commandPath) 
 ControllerSpotify.prototype.sendSpotifyLocalApiCommandWithPayload = function (commandPath, payload) {
     this.logger.info('Sending Spotify command with payload to local API: ' + commandPath);
     const apiBaseUrl = this.librespot[PLAYBACK_MODE_TO_WS_MAP[playbackMode]].apiBaseUrl;
+    this.logger.info(
+        JSON.stringify(
+            {playbackMode, apiBaseUrl, 'currentVolumioState.volatile': currentVolumioState.volatile},
+            null,
+            2
+        )
+    );
     superagent
         .post(apiBaseUrl + commandPath)
         .accept('application/json')
