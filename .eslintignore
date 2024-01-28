@@ -1,0 +1,8 @@
+*
+!.*.js
+
+!/spotify/
+!/spotify/**/
+!/spotify/**/*.js
+
+node_modules/

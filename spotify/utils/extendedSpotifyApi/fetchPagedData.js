@@ -3,11 +3,11 @@ const limit = 50;
 async function fetchPagedData(
   api,
   method,
-  { requiredArgs = [], options, paginationType = 'offset' },
-  { getItems = (d) => d.body?.items || [], onData, onEnd = () => {} }
+  {requiredArgs = [], options, paginationType = 'offset'},
+  {getItems = (d) => d.body?.items || [], onData, onEnd = () => {}}
 ) {
   let offset = 0;
-  let after = undefined;
+  let after;
 
   const nextPage = {
     offset: () => (offset += limit),
@@ -15,7 +15,7 @@ async function fetchPagedData(
   };
 
   while (true) {
-    const data = await api[method](...[...requiredArgs, { ...options, limit, offset, after }]);
+    const data = await api[method](...[...requiredArgs, {...options, limit, offset, after}]);
     const items = getItems(data);
     if (!items.length) {
       onEnd();
