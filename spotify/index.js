@@ -307,7 +307,7 @@ ControllerSpotify.prototype.parseEventState = function (event, type) {
     }
 };
 
-ControllerSpotify.prototype.identifyPlaybackMode = function (data, type) {
+ControllerSpotify.prototype.identifyPlaybackMode = async function (data, type) {
     if (unsettingVolatile) {
         // Ignore all unnecessary events (several "pause" events) from spotify during
         // switching from volatile mode to prevent volumio from switching back to volatile mode
@@ -319,7 +319,10 @@ ControllerSpotify.prototype.identifyPlaybackMode = function (data, type) {
     // play_origin = 'your_library' or 'playlist' means that Spotify is playing in volatile mode
     const isVolumioMode = data && data.play_origin && data.play_origin === 'go-librespot';
 
-    playbackMode = isVolumioMode ? 'volumio' : type === 'connect' ? 'connect-shared' : 'connect-signedin';
+    const newPlaybackMode = isVolumioMode ? 'volumio' : type === 'connect' ? 'connect-shared' : 'connect-signedin';
+    if (playbackMode !== newPlaybackMode) {
+        await this.pause();
+    }
     this.logger.info(
         'identifyPlaybackMode: ' +
             JSON.stringify(
@@ -329,11 +332,13 @@ ControllerSpotify.prototype.identifyPlaybackMode = function (data, type) {
                     'currentVolumioState.service': currentVolumioState.service,
                     'currentVolumioState.volatile': currentVolumioState.volatile,
                     playbackMode,
+                    newPlaybackMode,
                 },
                 null,
                 2
             )
     );
+    playbackMode = newPlaybackMode;
 
     // Refactor in order to handle the case where current service is spop but not in volatile mode
     if (
@@ -437,7 +442,7 @@ ControllerSpotify.prototype.sendSpotifyLocalApiCommand = function (commandPath) 
             2
         )
     );
-    superagent
+    return superagent
         .post(apiBaseUrl + commandPath)
         .accept('application/json')
         .then((results) => {})
@@ -456,7 +461,7 @@ ControllerSpotify.prototype.sendSpotifyLocalApiCommandWithPayload = function (co
             2
         )
     );
-    superagent
+    return superagent
         .post(apiBaseUrl + commandPath)
         .accept('application/json')
         .send(payload)
@@ -471,7 +476,7 @@ ControllerSpotify.prototype.pause = function () {
 
     this.debugLog('SPOTIFY PAUSE');
     this.debugLog(JSON.stringify(currentVolumioState));
-    this.sendSpotifyLocalApiCommand('/player/pause');
+    return this.sendSpotifyLocalApiCommand('/player/pause');
 };
 
 ControllerSpotify.prototype.play = function () {

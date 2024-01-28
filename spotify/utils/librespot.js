@@ -13,6 +13,7 @@ module.exports.Librespot = class Librespot {
     this._onOpen = onOpen;
     this._onMessage = onMessage;
     this._logger = logger;
+    this._restartOnClose = true;
   }
 
   async start() {
@@ -54,7 +55,7 @@ module.exports.Librespot = class Librespot {
     const w = new Websocket('ws://localhost:' + this._port + '/events');
     w.on('error', (error) => {
       this._logger.info(`Error connecting to go-librespot websocket: ${error}`);
-      this.restartWebsocket();
+      this._restartWebsocket();
     });
     w.on('message', (data) => {
       this._onMessage(JSON.parse(data));
@@ -67,18 +68,25 @@ module.exports.Librespot = class Librespot {
     });
     w.on('close', () => {
       this._logger.info(`Connection to go-librespot websocket closed`);
+      if (this._restartOnClose) {
+        this._restartWebsocket();
+      }
     });
 
     this._websocket = w;
   }
 
   _terminateConnection() {
-    this._logger.info('Terminate connection to go-librespot websocket');
     if (!this._websocket) {
       return;
     }
+    this._logger.info('Terminate connection to go-librespot websocket');
+    this._restartOnClose = false;
     this._websocket.terminate();
     this._websocket = undefined;
+    setTimeout(() => {
+      this._restartOnClose = true;
+    }, 3000);
   }
 
   _startDaemon() {
