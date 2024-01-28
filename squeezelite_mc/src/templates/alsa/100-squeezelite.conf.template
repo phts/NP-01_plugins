@@ -1,9 +1,0 @@
-pcm.squeezelite {
-    type empty
-    slave.pcm   "volumio"
-}
-
-ctl.squeezelite {
-    type hw
-    card ${CARD}
-}
