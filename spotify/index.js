@@ -15,12 +15,20 @@ const CREDENTIALS_PATH = '/data/configuration/music_service/spop/spotifycredenti
 let seekTimer;
 
 // State management
-const PLAYBACK_MODE_TO_WS_MAP = {
-    'connect-shared': 'connect',
-    'connect-signedin': 'volumio',
+const PLAYBACK_LIB = {
+    volumio: 'volumio',
+    connect: 'connect',
+};
+const PLAYBACK_MODE = {
+    connectPublic: 'connectPublic',
+    connectShared: 'connectShared',
     volumio: 'volumio',
 };
-let playbackMode = null;
+const PLAYBACK_MODE_TO_WS_MAP = {
+    [PLAYBACK_MODE.connectPublic]: PLAYBACK_LIB.connect,
+    [PLAYBACK_MODE.connectShared]: PLAYBACK_LIB.volumio,
+    [PLAYBACK_MODE.volumio]: PLAYBACK_LIB.volumio,
+};
 let currentVolumioState;
 let currentSpotifyVolume;
 let currentVolumioVolume;
@@ -42,9 +50,10 @@ function ControllerSpotify(context) {
     this.commandRouter = this.context.coreCommand;
     this.logger = this.context.logger;
     this.configManager = this.context.configManager;
-    this.resetSpotifyState();
+    this.playbackMode = PLAYBACK_MODE.volumio;
+    this.resetState();
     this.librespot = {
-        volumio: new Librespot({
+        [PLAYBACK_LIB.volumio]: new Librespot({
             port: 9879,
             configPath: '/tmp/go-librespot-config.yml',
             service: 'go-librespot-daemon.service',
@@ -55,16 +64,16 @@ function ControllerSpotify(context) {
                 }, 3000);
             },
             onMessage: (json) => {
-                this.parseEventState(json, 'volumio');
+                this.parseEventState(json, PLAYBACK_LIB.volumio);
             },
         }),
-        connect: new Librespot({
+        [PLAYBACK_LIB.connect]: new Librespot({
             port: 9880,
             configPath: '/tmp/go-librespot-connect-config.yml',
             service: 'go-librespot-connect-daemon.service',
             logger: this.logger,
             onMessage: (json) => {
-                this.parseEventState(json, 'connect');
+                this.parseEventState(json, PLAYBACK_LIB.connect);
             },
         }),
     };
@@ -89,8 +98,8 @@ ControllerSpotify.prototype.getConfigurationFiles = function () {
 };
 
 ControllerSpotify.prototype.onStop = function () {
-    this.librespot.volumio.stop();
-    this.librespot.connect.stop();
+    this.librespot[PLAYBACK_LIB.volumio].stop();
+    this.librespot[PLAYBACK_LIB.connect].stop();
     this.stopSocketStateListener();
     this.removeToBrowseSources();
     return libQ.resolve();
@@ -178,136 +187,128 @@ ControllerSpotify.prototype.getAdditionalConf = function (type, controller, data
 ControllerSpotify.prototype.initializeSpotifyControls = function () {
     const self = this;
 
-    self.resetSpotifyState();
+    self.resetState();
     self.startSocketStateListener();
     self.getSpotifyVolume();
 };
 
-ControllerSpotify.prototype.resetSpotifyState = function () {
-    const self = this;
-
-    this.state = {
-        status: 'stop',
-        service: 'spop',
-        title: '',
-        artist: '',
-        album: '',
-        albumart: '/albumart',
-        uri: '',
-        // icon: 'fa fa-spotify',
-        trackType: 'spotify',
-        seek: 0,
-        duration: 0,
-        samplerate: '44.1 KHz',
-        bitdepth: '16 bit',
-        bitrate: self.getCurrentBitrate(),
-        codec: 'ogg',
-        channels: 2,
-        random: null,
-        repeat: null,
-        repeatSingle: null,
-        year: null,
-        tracknumber: null,
-        discnumber: null,
-    };
+ControllerSpotify.prototype.resetState = function () {
+    this.state = [PLAYBACK_LIB.volumio, PLAYBACK_LIB.connect].reduce((acc, it) => {
+        acc[it] = {
+            status: 'stop',
+            service: 'spop',
+            title: '',
+            artist: '',
+            album: '',
+            albumart: '/albumart',
+            uri: '',
+            trackType: 'spotify',
+            seek: 0,
+            duration: 0,
+            samplerate: '44.1 KHz',
+            bitdepth: '16 bit',
+            bitrate: this.getCurrentBitrate(),
+            codec: 'ogg',
+            channels: 2,
+            random: null,
+            repeat: null,
+            repeatSingle: null,
+            year: null,
+            tracknumber: null,
+            discnumber: null,
+        };
+        return acc;
+    }, {});
 };
 
-ControllerSpotify.prototype.parseEventState = function (event, type) {
-    const self = this;
-    let pushStateforEvent = false;
-    console.log('parseEventState', type, JSON.stringify(event, null, 2));
+ControllerSpotify.prototype.parseEventState = function (event, lib) {
+    console.log('parseEventState', lib, JSON.stringify(event, null, 2));
+    let pushNeeded = false;
+    const state = this.getCurrentState(lib);
 
-    // create a switch case which handles types of events
-    // and updates the state accordingly
     switch (event.type) {
         case 'metadata':
-            self.state.title = event.data.name;
-            self.state.duration = self.parseDuration(event.data.duration);
-            self.state.uri = event.data.uri;
-            self.state.artist = self.parseArtists(event.data.artist_names);
-            self.state.album = event.data.album_name;
-            self.state.albumart = event.data.album_cover_url;
-            self.state.seek = event.data.position;
-            self.state.year = this.parseMetadataYear(event.data.release_date);
-            self.state.tracknumber = event.data.track_number;
-            self.state.discnumber = event.data.disc_number;
-            pushStateforEvent = false;
+            state.title = event.data.name;
+            state.duration = this.parseDuration(event.data.duration);
+            state.uri = event.data.uri;
+            state.artist = this.parseArtists(event.data.artist_names);
+            state.album = event.data.album_name;
+            state.albumart = event.data.album_cover_url;
+            state.seek = event.data.position;
+            state.year = this.parseMetadataYear(event.data.release_date);
+            state.tracknumber = event.data.track_number;
+            state.discnumber = event.data.disc_number;
             break;
         case 'will_play':
-            // impro: use this event to free up audio device when starting volatile?
-            pushStateforEvent = false;
+            state.status = 'pause';
+            this.identifyPlaybackMode(event.data, lib);
+            pushNeeded = true;
             break;
         case 'playing':
-            self.state.status = 'play';
-            self.identifyPlaybackMode(event.data, type);
+            state.status = 'play';
+            this.identifyPlaybackMode(event.data, lib);
             setTimeout(() => {
-                self.pushState();
+                this.pushState();
             }, 300);
-            pushStateforEvent = true;
+            pushNeeded = true;
             break;
         case 'paused':
-            self.state.status = 'pause';
-            self.identifyPlaybackMode(event.data, type);
-            pushStateforEvent = true;
+            state.status = 'pause';
+            pushNeeded = true;
             break;
         case 'stopped':
-            self.state.status = 'stop';
-            pushStateforEvent = true;
+            state.status = 'stop';
+            pushNeeded = true;
             break;
         case 'seek':
-            self.state.seek = event.data.position;
-            pushStateforEvent = true;
+            state.seek = event.data.position;
+            pushNeeded = true;
             break;
         case 'active':
-            // self.state.status = 'play';
-            pushStateforEvent = false;
-            self.alignSpotifyVolumeToVolumioVolume();
+            this.alignSpotifyVolumeToVolumioVolume();
             break;
         case 'inactive':
             // On external device selected other device than volumio
             // TODO: switch from volatile to normal mode
-            self.logger.error('Failed to decode event: ' + event.type);
-            pushStateforEvent = false;
+            this.logger.error('Failed to decode event: ' + event.type);
             break;
         case 'volume':
             try {
                 if (event.data && event.data.value !== undefined) {
-                    self.onSpotifyVolumeChange(parseInt(event.data.value));
+                    this.onSpotifyVolumeChange(parseInt(event.data.value));
                 }
             } catch (e) {
-                self.logger.error('Failed to parse Spotify volume event: ' + e);
+                this.logger.error('Failed to parse Spotify volume event: ' + e);
             }
-            pushStateforEvent = false;
             break;
         case 'shuffle_context':
-            self.state.random = event.data.value;
-            pushStateforEvent = true;
+            state.random = event.data.value;
+            pushNeeded = true;
             break;
         case 'repeat_context':
-            self.state.repeatSingle = false;
-            self.state.repeat = event.data.value;
-            pushStateforEvent = true;
+            state.repeatSingle = false;
+            state.repeat = event.data.value;
+            pushNeeded = true;
             break;
         case 'repeat_track':
             if (!event.data.value) {
                 break;
             }
-            self.state.repeatSingle = true;
-            self.state.repeat = true;
-            pushStateforEvent = true;
+            state.repeatSingle = true;
+            state.repeat = true;
+            pushNeeded = true;
             break;
         default:
-            self.logger.error('Failed to decode event: ' + event.type);
-            pushStateforEvent = false;
+            this.logger.error('Failed to decode event: ' + event.type);
             break;
     }
 
-    if (pushStateforEvent) {
-        self.pushState(self.state);
+    if (pushNeeded) {
+        this.pushState();
     }
 };
 
-ControllerSpotify.prototype.identifyPlaybackMode = async function (data, type) {
+ControllerSpotify.prototype.identifyPlaybackMode = async function (data, lib) {
     if (unsettingVolatile) {
         // Ignore all unnecessary events (several "pause" events) from spotify during
         // switching from volatile mode to prevent volumio from switching back to volatile mode
@@ -319,8 +320,12 @@ ControllerSpotify.prototype.identifyPlaybackMode = async function (data, type) {
     // play_origin = 'your_library' or 'playlist' means that Spotify is playing in volatile mode
     const isVolumioMode = data && data.play_origin && data.play_origin === 'go-librespot';
 
-    const newPlaybackMode = isVolumioMode ? 'volumio' : type === 'connect' ? 'connect-shared' : 'connect-signedin';
-    if (playbackMode !== newPlaybackMode) {
+    const newPlaybackMode = isVolumioMode
+        ? PLAYBACK_MODE.volumio
+        : lib === PLAYBACK_LIB.connect
+          ? PLAYBACK_MODE.connectPublic
+          : PLAYBACK_MODE.connectShared;
+    if (this.playbackMode !== newPlaybackMode) {
         await this.pause();
     }
     this.logger.info(
@@ -331,32 +336,33 @@ ControllerSpotify.prototype.identifyPlaybackMode = async function (data, type) {
                     'data.play_origin': data.play_origin,
                     'currentVolumioState.service': currentVolumioState.service,
                     'currentVolumioState.volatile': currentVolumioState.volatile,
-                    playbackMode,
+                    playbackMode: this.playbackMode,
                     newPlaybackMode,
                 },
                 null,
                 2
             )
     );
-    playbackMode = newPlaybackMode;
+    this.playbackMode = newPlaybackMode;
 
-    // Refactor in order to handle the case where current service is spop but not in volatile mode
-    if (
-        (!isVolumioMode && currentVolumioState.service !== 'spop') ||
-        (!isVolumioMode && currentVolumioState.service === 'spop' && currentVolumioState.volatile !== true)
-    ) {
-        this.initializeSpotifyPlaybackInVolatileMode();
+    if (!isVolumioMode) {
+        if (
+            currentVolumioState.service !== 'spop' ||
+            (currentVolumioState.service === 'spop' && !currentVolumioState.volatile)
+        ) {
+            this.initializeVolatileMode();
+        }
     }
 };
 
-ControllerSpotify.prototype.initializeSpotifyPlaybackInVolatileMode = function () {
+ControllerSpotify.prototype.initializeVolatileMode = function () {
     const self = this;
 
     self.logger.info('Spotify is playing in volatile mode');
     self.commandRouter.stateMachine.setConsumeUpdateService(undefined);
     self.context.coreCommand.stateMachine.setVolatile({
         service: 'spop',
-        callback: self.libRespotGoUnsetVolatile.bind(this),
+        callback: self.unsetVolatile.bind(this),
     });
 };
 
@@ -399,7 +405,7 @@ ControllerSpotify.prototype.parseArtists = function (spotifyArtists) {
     }
 };
 
-ControllerSpotify.prototype.libRespotGoUnsetVolatile = function () {
+ControllerSpotify.prototype.unsetVolatile = function () {
     this.debugLog('UNSET VOLATILE');
     this.debugLog(JSON.stringify(currentVolumioState, null, 2));
     unsettingVolatile = true;
@@ -414,30 +420,35 @@ ControllerSpotify.prototype.libRespotGoUnsetVolatile = function () {
 };
 
 ControllerSpotify.prototype.getState = function () {
-    const self = this;
-
-    self.debugLog('GET STATE SPOTIFY');
-    self.debugLog(JSON.stringify(self.state));
-    return self.state;
+    const state = this.getCurrentState();
+    this.debugLog('GET STATE SPOTIFY');
+    this.debugLog(JSON.stringify(state));
+    return state;
 };
 
-// Announce updated Spop state
-ControllerSpotify.prototype.pushState = function (state) {
-    const self = this;
+ControllerSpotify.prototype.getCurrentState = function (forceType) {
+    if (forceType) {
+        return this.state[forceType];
+    }
+    const type = this.playbackMode === PLAYBACK_MODE.volumio ? PLAYBACK_LIB.volumio : PLAYBACK_LIB.connect;
+    return this.state[type];
+};
 
-    self.state.bitrate = self.getCurrentBitrate();
-    self.debugLog('PUSH STATE SPOTIFY');
-    self.debugLog(JSON.stringify(self.state));
-    self.seekTimerAction();
-    return self.commandRouter.servicePushState(self.state, 'spop');
+ControllerSpotify.prototype.pushState = function () {
+    const state = this.getCurrentState();
+    state.bitrate = this.getCurrentBitrate();
+    this.debugLog('PUSH STATE SPOTIFY');
+    this.debugLog(JSON.stringify(state, null, 2));
+    this.seekTimerAction();
+    return this.commandRouter.servicePushState(state, 'spop');
 };
 
 ControllerSpotify.prototype.sendSpotifyLocalApiCommand = function (commandPath) {
     this.logger.info('Sending Spotify command to local API: ' + commandPath);
-    const apiBaseUrl = this.librespot[PLAYBACK_MODE_TO_WS_MAP[playbackMode]].apiBaseUrl;
+    const apiBaseUrl = this.librespot[PLAYBACK_MODE_TO_WS_MAP[this.playbackMode]].apiBaseUrl;
     this.logger.info(
         JSON.stringify(
-            {playbackMode, apiBaseUrl, 'currentVolumioState.volatile': currentVolumioState.volatile},
+            {playbackMode: this.playbackMode, apiBaseUrl, 'currentVolumioState.volatile': currentVolumioState.volatile},
             null,
             2
         )
@@ -453,10 +464,10 @@ ControllerSpotify.prototype.sendSpotifyLocalApiCommand = function (commandPath) 
 
 ControllerSpotify.prototype.sendSpotifyLocalApiCommandWithPayload = function (commandPath, payload) {
     this.logger.info('Sending Spotify command with payload to local API: ' + commandPath);
-    const apiBaseUrl = this.librespot[PLAYBACK_MODE_TO_WS_MAP[playbackMode]].apiBaseUrl;
+    const apiBaseUrl = this.librespot[PLAYBACK_MODE_TO_WS_MAP[this.playbackMode]].apiBaseUrl;
     this.logger.info(
         JSON.stringify(
-            {playbackMode, apiBaseUrl, 'currentVolumioState.volatile': currentVolumioState.volatile},
+            {playbackMode: this.playbackMode, apiBaseUrl, 'currentVolumioState.volatile': currentVolumioState.volatile},
             null,
             2
         )
@@ -482,7 +493,7 @@ ControllerSpotify.prototype.pause = function () {
 ControllerSpotify.prototype.play = function () {
     this.logger.info('Spotify Play');
 
-    if (this.state.status === 'pause') {
+    if (this.getCurrentState().status === 'pause') {
         this.sendSpotifyLocalApiCommand('/player/resume');
     } else {
         this.sendSpotifyLocalApiCommand('/player/play');
@@ -625,7 +636,7 @@ ControllerSpotify.prototype.alignSpotifyVolumeToVolumioVolume = function () {
 ControllerSpotify.prototype.clearAddPlayTrack = function (track) {
     const self = this;
     self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'ControllerSpotify::clearAddPlayTrack');
-    self.resetSpotifyState();
+    self.resetState();
 
     return self.sendSpotifyLocalApiCommandWithPayload('/player/play', {uri: track.uri});
 };
@@ -645,8 +656,8 @@ ControllerSpotify.prototype.startSocketStateListener = function () {
 
     self.stateSocket.on('pushState', function (data) {
         currentVolumioState = data;
-        playbackMode = data.volatile ? playbackMode : 'volumio';
-        if (data && data.volume && !data.disableVolumeControl) {
+        this.playbackMode = data.service === 'spop' && data.volatile ? this.playbackMode : PLAYBACK_MODE.volumio;
+        if (data.volume && !data.disableVolumeControl) {
             let currentVolume = data.volume;
             if (data.mute === true) {
                 currentVolume = 0;
@@ -672,18 +683,18 @@ ControllerSpotify.prototype.initializeLibrespot = async function () {
     try {
         await this.createConfigFile({
             tmplFilename: 'config.yml.tmpl',
-            outFile: this.librespot.volumio.configPath,
+            outFile: this.librespot[PLAYBACK_LIB.volumio].configPath,
             includeCredentials: true,
         });
         await this.createConfigFile({
             tmplFilename: 'config-connect.yml.tmpl',
-            outFile: this.librespot.connect.configPath,
+            outFile: this.librespot[PLAYBACK_LIB.connect].configPath,
         });
-        await this.librespot.volumio.start();
+        await this.librespot[PLAYBACK_LIB.volumio].start();
         if (this.config.get('shared_device', false)) {
-            await this.librespot.connect.start();
+            await this.librespot[PLAYBACK_LIB.connect].start();
         } else {
-            await this.librespot.connect.stop();
+            await this.librespot[PLAYBACK_LIB.connect].stop();
         }
     } catch (e) {
         this.logger.error('Error initializing go-librespot daemon: ' + e);
@@ -2816,12 +2827,11 @@ ControllerSpotify.prototype.explodeUri = function (uri) {
 };
 
 ControllerSpotify.prototype.seekTimerAction = function () {
-    const self = this;
-
-    if (this.state.status === 'play') {
+    const state = this.getCurrentState();
+    if (state.status === 'play') {
         if (seekTimer === undefined) {
             seekTimer = setInterval(() => {
-                this.state.seek = this.state.seek + 1000;
+                state.seek = state.seek + 1000;
             }, 1000);
         }
     } else {
@@ -2846,7 +2856,7 @@ ControllerSpotify.prototype.getSpotifyVolume = function () {
 
     self.logger.info('Getting Spotify volume');
     superagent
-        .get(this.librespot.volumio.apiBaseUrl + '/player/volume')
+        .get(this.librespot[PLAYBACK_LIB.volumio].apiBaseUrl + '/player/volume')
         .accept('application/json')
         .then((results) => {
             if (results && results.body && results.body.value) {
