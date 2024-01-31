@@ -254,6 +254,7 @@ ControllerSpotify.prototype.parseEventState = function (event, lib) {
             break;
         case 'paused':
             state.status = 'pause';
+            this.identifyPlaybackMode(event.data, lib);
             pushNeeded = true;
             break;
         case 'stopped':
