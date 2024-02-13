@@ -9,3 +9,4 @@ Noticeable changes:
 - Reorder "albums", "EPs", etc into separate lists on Artist's page
 - Option to disable normalization
 - Show track number and year for Connect mode
+- Mark favorite tracks

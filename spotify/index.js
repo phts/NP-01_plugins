@@ -2157,11 +2157,27 @@ ControllerSpotify.prototype.getArtistRelatedArtists = function (artistId) {
   return defer.promise;
 };
 
+ControllerSpotify.prototype.getFavTracksStatuses = async function (tracks) {
+  try {
+    const ids = tracks.map((it) => it.id);
+    const {body} = await this.spotifyApi.containsMySavedTracks(ids);
+    return body;
+  } catch (e) {
+    this.logger.warn(`Failed Spotify API containsMySavedTracks: ${e.message}`);
+  }
+  return [];
+};
+
 ControllerSpotify.prototype.getAlbumTracks = async function (id) {
   await this.spotifyCheckAccessToken();
   try {
     const {body: album} = await this.spotifyApi.getAlbum(id);
+    const favs = await this.getFavTracksStatuses(album.tracks.items);
     return album.tracks.items
+      .map((track, i) => {
+        track.favorite = !!favs[i];
+        return track;
+      })
       .filter((track) => this.isTrackAvailableInCountry(track))
       .map((track) => ({
         service: 'spop',
@@ -2180,6 +2196,7 @@ ControllerSpotify.prototype.getAlbumTracks = async function (id) {
         duration: Math.trunc(track.duration_ms / 1000),
         year: parseYear(album),
         tracknumber: track.track_number,
+        favorite: track.favorite,
       }));
   } catch (e) {
     this.logger.error('An error occurred while listing Spotify album tracks ' + e);
@@ -2245,7 +2262,12 @@ ControllerSpotify.prototype.getArtistTopTracks = async function (id) {
     const {
       body: {tracks},
     } = await this.spotifyApi.getArtistTopTracks(id, 'GB');
+    const favs = await this.getFavTracksStatuses(tracks);
     return tracks
+      .map((track, i) => {
+        track.favorite = !!favs[i];
+        return track;
+      })
       .filter((track) => this.isTrackAvailableInCountry(track))
       .map((track) => {
         let albumart = '';
@@ -2269,6 +2291,7 @@ ControllerSpotify.prototype.getArtistTopTracks = async function (id) {
           uri: track.uri,
           year: parseYear(track.album),
           tracknumber: track.track_number,
+          favorite: track.favorite,
         };
       });
   } catch (e) {
