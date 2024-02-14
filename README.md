@@ -2,12 +2,14 @@
 
 Modified [Volumio plugins][volumio-plugins-sources] which are used by [PHTS NP-01].
 
-Contains:
+## Changes
+
+Go to each plugin's README for noticeable changes:
 
 - [podcast]
 - [spotify]
 
-## Changelog
+### Changelog by git
 
 ```sh
 git remote add v https://github.com/volumio/volumio3-backend.git
