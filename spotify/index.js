@@ -2022,10 +2022,10 @@ ControllerSpotify.prototype.listWebArtist = async function (uri) {
     const tracks = await this.listArtistTracks(artistId);
     topTracksList.items.push(...tracks);
 
-    const albums = await this.listArtistAlbums(artistId);
+    const albumsPerGroup = await this.listArtistAlbums(artistId);
     albumSections = ['album', 'single', 'compilation', 'appears_on']
       .map((section) => {
-        const items = albums.filter((al) => al.section === section);
+        const items = albumsPerGroup[section];
         if (!items.length) {
           return null;
         }
@@ -2076,6 +2076,7 @@ ControllerSpotify.prototype.listArtistAlbums = async function (id) {
         albums = [
           ...albums,
           ...items.map((album) => ({
+            id: album.id,
             service: 'spop',
             type: 'folder-album',
             title: album.name,
@@ -2088,8 +2089,37 @@ ControllerSpotify.prototype.listArtistAlbums = async function (id) {
       },
     }
   );
+
   albums.sort((a, b) => (a.year > b.year ? 1 : a.year === b.year ? 0 : -1));
-  return albums;
+
+  const albumsPerGroup = albums.reduce(
+    (acc, al) => {
+      acc[al.section].push(al);
+      return acc;
+    },
+    {album: [], single: [], compilation: [], appears_on: []}
+  );
+
+  try {
+    // due to Spotify limitation only first 50 items can be handled per one request
+    // so albums in the first row, then the rest
+    const sortedAlbums = ['album', 'single', 'compilation', 'appears_on']
+      .reduce((acc, g) => {
+        acc.push(...albumsPerGroup[g]);
+        return acc;
+      }, [])
+      .slice(0, 50);
+    const albumIds = sortedAlbums.map((x) => x.id);
+    const {body: favs} = await this.spotifyApi.containsMySavedAlbums(albumIds);
+    sortedAlbums.forEach((album, i) => {
+      album.favorite = !!favs[i];
+    });
+  } catch (e) {
+    this.logger.warn(`Failed Spotify API containsMySavedAlbums: ${e.message}`);
+    // ignore
+  }
+
+  return albumsPerGroup;
 };
 
 ControllerSpotify.prototype.getArtistTracks = async function (id) {

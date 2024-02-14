@@ -9,4 +9,5 @@ Noticeable changes:
 - Reorder "albums", "EPs", etc into separate lists on Artist's page
 - Option to disable normalization
 - Show track number and year for Connect mode
-- Mark favorite tracks
+- Mark favorite tracks/albums in music library
+  - Favorite albums require UI support, official Manifest UI theme explicitly allows favorite marks only on tracks
