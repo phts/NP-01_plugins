@@ -1,14 +1,13 @@
 'use strict';
 
-const os = require('os');
 const path = require('path');
+const exec = require('child_process').exec;
 const libQ = require('kew');
 const fs = require('fs-extra');
 const superagent = require('superagent');
 const websocket = require('ws');
 const SpotifyWebApi = require('spotify-web-api-node');
 const io = require('socket.io-client');
-const exec = require('child_process').exec;
 const NodeCache = require('node-cache');
 const {parseYear} = require('./helpers');
 const {fetchPagedData, rateLimitedCall} = require('./utils/extendedSpotifyApi');
