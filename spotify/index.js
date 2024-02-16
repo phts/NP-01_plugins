@@ -2122,10 +2122,8 @@ ControllerSpotify.prototype.listArtistAlbums = async function (id) {
   return albumsPerGroup;
 };
 
-ControllerSpotify.prototype.getArtistTracks = async function (id) {
-  const topTracks = await this.getArtistTopTracks(id);
-  const albumTracks = await this.getArtistAlbumTracks(id);
-  return [...topTracks, ...albumTracks];
+ControllerSpotify.prototype.getArtistTracks = function (id) {
+  return this.getArtistAlbumTracks(id);
 };
 
 ControllerSpotify.prototype.getArtistAlbumTracks = async function (id) {
