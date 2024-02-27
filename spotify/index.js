@@ -241,7 +241,7 @@ ControllerSpotify.prototype.resetSpotifyState = function () {
 
 ControllerSpotify.prototype.parseEventState = function (event) {
   const self = this;
-  let pushStateforEvent = false;
+  let pushStateForEvent = false;
 
   // create a switch case which handles types of events
   // and updates the state accordingly
@@ -257,11 +257,9 @@ ControllerSpotify.prototype.parseEventState = function (event) {
       self.state.year = this.parseMetadataYear(event.data.release_date);
       self.state.tracknumber = event.data.track_number;
       self.state.discnumber = event.data.disc_number;
-      pushStateforEvent = false;
       break;
     case 'will_play':
       // impro: use this event to free up audio device when starting volatile?
-      pushStateforEvent = false;
       break;
     case 'playing':
       self.state.status = 'play';
@@ -269,24 +267,22 @@ ControllerSpotify.prototype.parseEventState = function (event) {
       setTimeout(() => {
         self.pushState();
       }, 300);
-      pushStateforEvent = true;
+      pushStateForEvent = true;
       break;
     case 'paused':
       self.state.status = 'pause';
       self.identifyPlaybackMode(event.data);
-      pushStateforEvent = true;
+      pushStateForEvent = true;
       break;
     case 'stopped':
       self.state.status = 'stop';
-      pushStateforEvent = true;
+      pushStateForEvent = true;
       break;
     case 'seek':
       self.state.seek = event.data.position;
-      pushStateforEvent = true;
+      pushStateForEvent = true;
       break;
     case 'active':
-      // self.state.status = 'play';
-      pushStateforEvent = false;
       self.alignSpotifyVolumeToVolumioVolume();
       break;
     case 'volume':
@@ -297,16 +293,15 @@ ControllerSpotify.prototype.parseEventState = function (event) {
       } catch (e) {
         self.logger.error('Failed to parse Spotify volume event: ' + e);
       }
-      pushStateforEvent = false;
       break;
     case 'shuffle_context':
       self.state.random = event.data.value;
-      pushStateforEvent = true;
+      pushStateForEvent = true;
       break;
     case 'repeat_context':
       self.state.repeatSingle = false;
       self.state.repeat = event.data.value;
-      pushStateforEvent = true;
+      pushStateForEvent = true;
       break;
     case 'repeat_track':
       if (!event.data.value) {
@@ -314,15 +309,14 @@ ControllerSpotify.prototype.parseEventState = function (event) {
       }
       self.state.repeatSingle = true;
       self.state.repeat = true;
-      pushStateforEvent = true;
+      pushStateForEvent = true;
       break;
     default:
       self.logger.error('Failed to decode event: ' + event.type);
-      pushStateforEvent = false;
       break;
   }
 
-  if (pushStateforEvent) {
+  if (pushStateForEvent) {
     self.pushState(self.state);
   }
 };
@@ -344,18 +338,18 @@ ControllerSpotify.prototype.identifyPlaybackMode = function (data) {
     (!isVolumioMode && currentVolumioState.service !== 'spop') ||
     (!isVolumioMode && currentVolumioState.service === 'spop' && currentVolumioState.volatile !== true)
   ) {
-    this.initializeSpotifyPlaybackInVolatileMode();
+    this.initializeVolatileMode();
   }
 };
 
-ControllerSpotify.prototype.initializeSpotifyPlaybackInVolatileMode = function () {
+ControllerSpotify.prototype.initializeVolatileMode = function () {
   const self = this;
 
   self.logger.info('Spotify is playing in volatile mode');
   self.commandRouter.stateMachine.setConsumeUpdateService(undefined);
   self.context.coreCommand.stateMachine.setVolatile({
     service: 'spop',
-    callback: self.libRespotGoUnsetVolatile.bind(this),
+    callback: self.unsetVolatile.bind(this),
   });
 };
 
@@ -398,7 +392,7 @@ ControllerSpotify.prototype.parseArtists = function (spotifyArtists) {
   }
 };
 
-ControllerSpotify.prototype.libRespotGoUnsetVolatile = function () {
+ControllerSpotify.prototype.unsetVolatile = function () {
   this.debugLog('UNSET VOLATILE');
   this.debugLog(JSON.stringify(currentVolumioState));
   unsettingVolatile = true;
