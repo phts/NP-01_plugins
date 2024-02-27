@@ -402,9 +402,7 @@ ControllerSpotify.prototype.unsetVolatile = function () {
 
   if (currentVolumioState && currentVolumioState.status && currentVolumioState.status !== 'stop') {
     this.logger.info('Setting Spotify stop after unset volatile call');
-    setTimeout(() => {
-      this.stop();
-    }, 500);
+    this.stop();
   }
 };
 
