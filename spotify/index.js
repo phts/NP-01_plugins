@@ -9,7 +9,7 @@ const websocket = require('ws');
 const SpotifyWebApi = require('spotify-web-api-node');
 const io = require('socket.io-client');
 const NodeCache = require('node-cache');
-const {parseYear} = require('./helpers');
+const {parseYear, tracksTotalDiscs} = require('./helpers');
 const {fetchPagedData, rateLimitedCall} = require('./utils/extendedSpotifyApi');
 
 const configFileDestinationPath = '/tmp/go-librespot-config.yml';
@@ -2196,7 +2196,7 @@ ControllerSpotify.prototype.getAlbumTracks = async function (id) {
   try {
     const {body: album} = await this.spotifyApi.getAlbum(id);
     const favs = await this.getFavTracksStatuses(album.tracks.items);
-    return album.tracks.items
+    const tracks = album.tracks.items
       .map((track, i) => {
         track.favorite = !!favs[i];
         return track;
@@ -2220,7 +2220,13 @@ ControllerSpotify.prototype.getAlbumTracks = async function (id) {
         year: parseYear(album),
         tracknumber: track.track_number,
         favorite: track.favorite,
+        discnumber: parseInt(track.disc_number),
       }));
+    const totalDiscs = tracksTotalDiscs(tracks);
+    if (totalDiscs === 1) {
+      return tracks;
+    }
+    return tracks.map((t) => ({...t, tracknumber: `${String.fromCharCode(t.discnumber + 64)}${t.tracknumber}`}));
   } catch (e) {
     this.logger.error('An error occurred while listing Spotify album tracks ' + e);
     throw e;
