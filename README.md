@@ -40,6 +40,19 @@ git merge volumio-master-formatted
 # fix conflicts, run format and commit
 ```
 
+## Deploy
+
+```sh
+bash scripts/deploy.sh [podcast|spotify] [--install] [--uninstall] [--restart]
+```
+
+Use `--install` to run `install.sh` script, e.g. to install updated `go-librespot` library
+
+### Prerequisites
+
+1. Configure `ssh` host `volumio` pointing to your device
+2. Install original Spotify plugin on your device, because "deploy" script will override some files of original plugin
+
 [phts np-01]: https://tsaryk.com/NP-01
 [volumio-plugins-sources]: https://github.com/volumio/volumio-plugins-sources
 [spotify]: ./spotify
