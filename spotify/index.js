@@ -809,7 +809,7 @@ ControllerSpotify.prototype.refreshAccessToken = function () {
   const refreshToken = self.config.get('refresh_token', 'none');
   if (refreshToken !== 'none' && refreshToken !== null && refreshToken !== undefined) {
     superagent
-      .post('https://oauth-performer.dfs.volumio.org/spotify/accessToken')
+      .post('https://oauth-performer.prod.vlmapi.io/spotify/accessToken')
       .send({refreshToken: refreshToken})
       .then(function (results) {
         if (results && results.body && results.body.accessToken) {
@@ -994,30 +994,6 @@ ControllerSpotify.prototype.spotifyApiConnect = function () {
       defer.reject(err);
     }
   );
-
-  return defer.promise;
-};
-
-ControllerSpotify.prototype.refreshAccessToken = function () {
-  const self = this;
-  const defer = libQ.defer();
-
-  const refreshToken = self.config.get('refresh_token', 'none');
-  if (refreshToken !== 'none' && refreshToken !== null && refreshToken !== undefined) {
-    superagent
-      .post('https://oauth-performer.dfs.volumio.org/spotify/accessToken')
-      .send({refreshToken: refreshToken})
-      .then(function (results) {
-        if (results && results.body && results.body.accessToken) {
-          defer.resolve(results);
-        } else {
-          defer.resject('No access token received');
-        }
-      })
-      .catch(function (err) {
-        self.logger.info('An error occurred while refreshing Spotify Token ' + err);
-      });
-  }
 
   return defer.promise;
 };
