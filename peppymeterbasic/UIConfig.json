@@ -36,7 +36,7 @@
 		{
 			"id": "section_meter",
 			"element": "section",
-			"label": "meter",
+			"label": "TRANSLATE.METER_CONFIG",
 			"icon": "fa-microchip",
 			"onSave": {
 				"type": "controller",

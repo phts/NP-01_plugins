@@ -3,7 +3,7 @@
   "SCREENSIZE": "METER folder",
   "SCREENSIZE_DOC": "Folder for METER. Custom folder are in /data/INTERNAL/PeppyMeterBasic/Templates/ and must be named weightxheight-description. ex 800x480-collection.",
   "CHOOSE_METER_DOC": "Select the METER in the list",
-  "CHOOSE_METER":"Select METER",
+  "METER_CONFIG": "Meter config",
   "NBARCHANGE": "Number of bars in METER changed! Now set to ",
   "APPLY": "Apply",
   "SAVE": "Close",
