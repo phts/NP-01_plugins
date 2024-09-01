@@ -47,7 +47,8 @@
 				"label": "TRANSLATE.APPLY",
 				"data": [
 					"meter",
-					"exitDelay"
+					"exitDelay",
+					"scale"
 				]
 			},
 			"content": [
@@ -130,6 +131,14 @@
 					"doc": "TRANSLATE.EXIT_DELAY_DOC",
 					"label": "TRANSLATE.EXIT_DELAY",
 					"value": 3
+				},
+				{
+					"id": "scale",
+					"element": "input",
+					"type": "number",
+					"doc": "TRANSLATE.SCALE_DOC",
+					"label": "TRANSLATE.SCALE",
+					"value": 100
 				}
 			]
 		},

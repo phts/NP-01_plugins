@@ -15,5 +15,7 @@
   "LIST_SUCCESS_UPDATED": "List updated",
   "LIST_FAIL_UPDATE": "Failed to update list",
   "EXIT_DELAY": "Exit delay (in seconds)",
-  "EXIT_DELAY_DOC": "Time to keep the meter showing after playback is paused"
+  "EXIT_DELAY_DOC": "Time to keep the meter showing after playback is paused",
+  "SCALE_DOC": "Maximum peak level (in percentage)",
+  "SCALE": "Scale"
 }

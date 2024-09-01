@@ -34,6 +34,7 @@ peppymeterbasic.prototype.onVolumioStart = function () {
     self.config = new (require('v-conf'))();
     self.config.loadFile(configFile);
     self.config.set('exitDelay', this.config.get('exitDelay', 3));
+    self.config.set('scale', this.config.get('scale', 100));
     return libQ.resolve();
 };
 
@@ -209,6 +210,8 @@ peppymeterbasic.prototype.getUIConfig = function () {
 
             const exitDelay = self.config.get('exitDelay');
             self.configManager.setUIConfigParam(uiconf, 'sections[1].content[4].value', exitDelay);
+            const scale = self.config.get('scale');
+            self.configManager.setUIConfigParam(uiconf, 'sections[1].content[5].value', scale);
 
             const directoryPath = '/data/INTERNAL/PeppyMeterBasic/Templates/';
 
@@ -515,6 +518,7 @@ peppymeterbasic.prototype.savepeppy1 = function (data) {
     const defer = libQ.defer();
     self.config.set('meter', data['meter'].value);
     self.config.set('exitDelay', data.exitDelay);
+    self.config.set('scale', data.scale > 0 ? data.scale : 1);
 
     self.savepeppyconfig();
     self.restartpeppyservice()
@@ -659,6 +663,7 @@ peppymeterbasic.prototype.savepeppyconfig = function () {
                 .replace("${screenheight}", screenheight)
                 .replace("${metersize}", metersize)
                 .replace("${debuglog}", debuglogd)
+                .replace("${scale}", self.config.get("scale"))
 
 
             fs.writeFile("/data/plugins/user_interface/peppymeterbasic/BasicPeppyMeter/config.txt", conf1, 'utf8', function (err) {
