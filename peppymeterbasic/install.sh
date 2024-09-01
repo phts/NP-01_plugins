@@ -19,7 +19,6 @@ git clone --depth=1 --branch=master https://github.com/phts/NP-01_vu-meter.git $
 cd $peppymeterpath
 git pull origin master
 cd -
-chmod 777 -R $peppymeterpath
 sudo chown -R volumio "$spath" "$customfolder"
 sudo chgrp -R volumio "$spath" "$customfolder"
 echo "installing apt packages"
