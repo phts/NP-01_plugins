@@ -5,4 +5,8 @@
 !/spotify/**/
 !/spotify/**/*.js
 
+!/peppymeterbasic/
+!/peppymeterbasic/**/
+!/peppymeterbasic/**/*.js
+
 node_modules/
