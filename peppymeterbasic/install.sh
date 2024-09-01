@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+
 peppymeterpath=/data/plugins/user_interface/peppymeterbasic/BasicPeppyMeter
 spath=/data/plugins/user_interface/peppymeterbasic
 customfolder=/data/INTERNAL/PeppyMeterBasic/Templates
@@ -15,9 +17,13 @@ echo "Installing peppyalsa plugin dependencies"
 sudo apt-get update
 
 echo "cloning peppymeter repo"
-git clone --depth=1 --branch=master https://github.com/phts/NP-01_vu-meter.git $peppymeterpath
+git clone --depth=1 --branch=master https://github.com/phts/NP-01_vu-meter.git $peppymeterpath || true
 cd $peppymeterpath
+git config user.email "volumio@volumio.com"
+git config user.name "volumio"
+git stash || true
 git pull origin master
+git stash pop || true
 cd -
 sudo chown -R volumio "$spath" "$customfolder"
 sudo chgrp -R volumio "$spath" "$customfolder"
