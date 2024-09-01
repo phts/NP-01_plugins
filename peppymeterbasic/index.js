@@ -85,7 +85,7 @@ peppymeterbasic.prototype.onStart = function () {
                 pipeDefer.resolve();
             });
 
-            return Defer.promise;
+            return pipeDefer.promise;
         });
     defer.resolve();
     setTimeout(function () {
@@ -114,6 +114,7 @@ peppymeterbasic.prototype.startpeppyservice = function () {
             defer.resolve();
         }
     });
+    return defer.promise;
 };
 
 peppymeterbasic.prototype.restartpeppyservice = function () {
@@ -131,6 +132,7 @@ peppymeterbasic.prototype.restartpeppyservice = function () {
             defer.resolve();
         }
     });
+    return defer.promise;
 };
 
 peppymeterbasic.prototype.stopeppyservice = function () {
@@ -149,6 +151,7 @@ peppymeterbasic.prototype.stopeppyservice = function () {
             defer.resolve();
         }
     });
+    return defer.promise;
 };
 
 
