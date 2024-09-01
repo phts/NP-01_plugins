@@ -33,6 +33,7 @@ peppymeterbasic.prototype.onVolumioStart = function () {
     var configFile = self.commandRouter.pluginManager.getConfigurationFile(self.context, 'config.json');
     self.config = new (require('v-conf'))();
     self.config.loadFile(configFile);
+    self.config.set('exitDelay', this.config.get('exitDelay', 3));
     return libQ.resolve();
 };
 
@@ -171,13 +172,19 @@ peppymeterbasic.prototype.onUninstall = function () {
 
 peppymeterbasic.prototype.checkIfPlay = function () {
     const self = this;
+    let exitTimeoutRef = null
     self.socket.on('pushState', function (data) {
         self.logger.info(logPrefix + 'peppymeterbasic status ' + data.status);
 
         if (data.status === "play") {
+            clearTimeout(exitTimeoutRef)
             self.startpeppyservice()
         } else if ((data.status === "pause") || (data.status === "stop")) {
-            self.stopeppyservice()
+            clearTimeout(exitTimeoutRef)
+            exitTimeoutRef = setTimeout(() => {
+                exitTimeoutRef = null
+                self.stopeppyservice()
+            }, self.config.get('exitDelay') * 1000);
         }
     })
 };
@@ -200,6 +207,8 @@ peppymeterbasic.prototype.getUIConfig = function () {
             self.configManager.setUIConfigParam(uiconf, 'sections[0].content[0].value.value', valuescreen);
             self.configManager.setUIConfigParam(uiconf, 'sections[0].content[0].value.label', valuescreen);
 
+            const exitDelay = self.config.get('exitDelay');
+            self.configManager.setUIConfigParam(uiconf, 'sections[1].content[4].value', exitDelay);
 
             const directoryPath = '/data/INTERNAL/PeppyMeterBasic/Templates/';
 
@@ -505,6 +514,7 @@ peppymeterbasic.prototype.savepeppy1 = function (data) {
 
     const defer = libQ.defer();
     self.config.set('meter', data['meter'].value);
+    self.config.set('exitDelay', data.exitDelay);
 
     self.savepeppyconfig();
     self.restartpeppyservice()

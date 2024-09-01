@@ -13,5 +13,7 @@
   "METER_INSTALL_WAIT":"Please wait...",
   "CLICK_TO_UPDATE_LIST":"Update list",
   "LIST_SUCCESS_UPDATED": "List updated",
-  "LIST_FAIL_UPDATE": "Failed to update list"
+  "LIST_FAIL_UPDATE": "Failed to update list",
+  "EXIT_DELAY": "Exit delay (in seconds)",
+  "EXIT_DELAY_DOC": "Time to keep the meter showing after playback is paused"
 }

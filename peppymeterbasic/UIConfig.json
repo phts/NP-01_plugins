@@ -46,8 +46,8 @@
 			"saveButton": {
 				"label": "TRANSLATE.APPLY",
 				"data": [
-					"meter"
-					
+					"meter",
+					"exitDelay"
 				]
 			},
 			"content": [
@@ -122,6 +122,14 @@
 					"doc": "auto screen size",
 					"label": "auto screen size",
 					"value": false
+				},
+				{
+					"id": "exitDelay",
+					"element": "input",
+					"type": "number",
+					"doc": "TRANSLATE.EXIT_DELAY_DOC",
+					"label": "TRANSLATE.EXIT_DELAY",
+					"value": 3
 				}
 			]
 		},
