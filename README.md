@@ -6,6 +6,7 @@ Modified [Volumio plugins][volumio-plugins-sources] which are used by [PHTS NP-0
 
 Go to each plugin's README for noticeable changes:
 
+- [peppymeterbasic]
 - [podcast]
 - [spotify]
 

@@ -3,6 +3,16 @@
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
 for arg in "$@"; do
+  if [ "$arg" == "peppymeterbasic" ]; then
+    PLUGIN_DIR="/data/plugins/user_interface/peppymeterbasic"
+    scp "${SCRIPT_DIR}/../peppymeterbasic/config.json" volumio:${PLUGIN_DIR}/
+    scp "${SCRIPT_DIR}/../peppymeterbasic/config.txt.tmpl" volumio:${PLUGIN_DIR}/
+    scp "${SCRIPT_DIR}/../peppymeterbasic/index.js" volumio:${PLUGIN_DIR}/
+    scp "${SCRIPT_DIR}/../peppymeterbasic/install.sh" volumio:${PLUGIN_DIR}/
+    scp "${SCRIPT_DIR}/../peppymeterbasic/package.json" volumio:${PLUGIN_DIR}/
+    scp "${SCRIPT_DIR}/../peppymeterbasic/UIConfig.json" volumio:${PLUGIN_DIR}/
+    scp "${SCRIPT_DIR}/../peppymeterbasic/i18n/strings_en.json" volumio:${PLUGIN_DIR}/i18n/
+  fi
   if [ "$arg" == "podcast" ]; then
     PLUGIN_DIR="/data/plugins/music_service/podcast"
     scp "${SCRIPT_DIR}/../podcast/index.js" volumio:${PLUGIN_DIR}/
