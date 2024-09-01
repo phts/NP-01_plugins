@@ -43,12 +43,12 @@ fi
 
 # Determine the correct PEPPY_ALSA_PATH based on ARCH
 case "$ARCH" in
-    "armv6l" | "armv7l" | "aarch64")
-        PEPPY_ALSA_PATH="${ALSA_BASE_PATH}/armhf"
+"armv6l" | "armv7l" | "aarch64")
+    PEPPY_ALSA_PATH="${ALSA_BASE_PATH}/armhf"
 
-cat > /etc/systemd/system/peppymeterbasic.service <<EOC
+    cat >/etc/systemd/system/peppymeterbasic.service <<EOC
 [Unit]
-Description=peppymeterbasic Daemon 
+Description=peppymeterbasic Daemon
 After=syslog.target
 [Service]
 Type=simple
@@ -64,13 +64,13 @@ TimeoutSec=1
 [Install]
 WantedBy=multi-user.target
 EOC
-        ;;
-    "x86_64")
-        PEPPY_ALSA_PATH="${ALSA_BASE_PATH}/x86_64"
+    ;;
+"x86_64")
+    PEPPY_ALSA_PATH="${ALSA_BASE_PATH}/x86_64"
 
-cat > /etc/systemd/system/peppymeterbasic.service <<EOC
+    cat >/etc/systemd/system/peppymeterbasic.service <<EOC
 [Unit]
-Description=peppymeterbasic Daemon 
+Description=peppymeterbasic Daemon
 After=syslog.target
 [Service]
 Type=simple
@@ -86,11 +86,11 @@ TimeoutSec=1
 [Install]
 WantedBy=multi-user.target
 EOC
-        ;;
-    *)
-        echo "Unknown arch: ${ARCH}. Installation cannot proceed."
-        cleanup_exit_err
-        ;;
+    ;;
+*)
+    echo "Unknown arch: ${ARCH}. Installation cannot proceed."
+    cleanup_exit_err
+    ;;
 esac
 
 sudo systemctl daemon-reload
