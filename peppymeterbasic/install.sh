@@ -12,11 +12,13 @@ echo "Installing peppyalsa plugin dependencies"
 #
 #
 
-
 sudo apt-get update
 
 echo "cloning peppymeter repo"
-git clone https://github.com/project-owner/PeppyMeter $peppymeterpath
+git clone --depth=1 --branch=master https://github.com/phts/NP-01_vu-meter.git $peppymeterpath
+cd $peppymeterpath
+git pull origin master
+cd -
 chmod 777 -R $peppymeterpath
 sudo chown -R volumio "$spath" "$customfolder"
 sudo chgrp -R volumio "$spath" "$customfolder"
