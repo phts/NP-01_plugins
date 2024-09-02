@@ -29,7 +29,7 @@
     "kew": "^0.7.0",
     "node-cache": "^4.1.1",
     "socket.io-client": "2.1.1",
-    "spotify-web-api-node": "^5.0.2",
+    "spotify-web-api-node": "phts/spotify-web-api-node#cfe245456d46539a4d6022ad67b8607123f68399",
     "superagent": "^8.1.2",
     "v-conf": "^1.4.2",
     "ws": "^8.13.0"
