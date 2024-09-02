@@ -32,6 +32,9 @@ for arg in "$@"; do
     scp "${SCRIPT_DIR}/../spotify/utils/extendedSpotifyApi/index.js" volumio:${PLUGIN_DIR}/utils/extendedSpotifyApi/
     scp "${SCRIPT_DIR}/../spotify/utils/extendedSpotifyApi/rateLimitedCall.js" volumio:${PLUGIN_DIR}/utils/extendedSpotifyApi/
   fi
+  if [ "$arg" == "--npm-install" ]; then
+    NEED_NPM_INSTALL=true
+  fi
   if [ "$arg" == "--install" ]; then
     NEED_INSTALL=true
   fi
@@ -45,6 +48,10 @@ done
 
 if [ "${NEED_INSTALL}" == "true" ]; then
   ssh volumio "sudo -S bash '${PLUGIN_DIR}/install.sh'"
+fi
+
+if [ "${NEED_NPM_INSTALL}" == "true" ]; then
+  ssh volumio "cd '${PLUGIN_DIR}' && sudo -S bash 'npm i'"
 fi
 
 if [ "${NEED_UNINSTALL}" == "true" ]; then
