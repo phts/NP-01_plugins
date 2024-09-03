@@ -1444,7 +1444,7 @@ ControllerSpotify.prototype.getMyAlbums = function () {
         onEnd: () => {
           albums.sort((a, b) => {
             if (a.artist !== b.artist) {
-              return a.artist > b.artist ? 1 : -1;
+              return a.artist.localeCompare(b.artist, undefined, {sensitivity: 'base'});
             }
             return a.year > b.year ? 1 : a.year === b.year ? 0 : -1;
           });
@@ -1503,7 +1503,7 @@ ControllerSpotify.prototype.getMyTracks = function () {
         onEnd: () => {
           tracks.sort((a, b) => {
             if (a.artist !== b.artist) {
-              return a.artist > b.artist ? 1 : -1;
+              return a.artist.localeCompare(b.artist, undefined, {sensitivity: 'base'});
             }
             if (a.year !== b.year) {
               return a.year > b.year ? 1 : -1;
@@ -1561,7 +1561,7 @@ ControllerSpotify.prototype.getMyArtists = function () {
           }
         },
         onEnd: () => {
-          artists.sort((a, b) => (a.title > b.title ? 1 : a.title === b.title ? 0 : -1));
+          artists.sort((a, b) => a.title.localeCompare(b.title, undefined, {sensitivity: 'base'}));
           defer.resolve({
             navigation: {
               prev: {
