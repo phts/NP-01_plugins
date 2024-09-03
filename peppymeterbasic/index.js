@@ -35,6 +35,7 @@ peppymeterbasic.prototype.onVolumioStart = function () {
     self.config.loadFile(configFile);
     self.config.set('exitDelay', this.config.get('exitDelay', 3));
     self.config.set('scale', this.config.get('scale', 100));
+    self.config.set('autostart', this.config.get('autostart', true));
     return libQ.resolve();
 };
 
@@ -175,6 +176,9 @@ peppymeterbasic.prototype.checkIfPlay = function () {
     const self = this;
     let exitTimeoutRef = null
     self.socket.on('pushState', function (data) {
+        if (!self.config.get('autostart')) {
+            return
+        }
         self.logger.info(logPrefix + 'peppymeterbasic status ' + data.status);
 
         if (data.status === "play") {
@@ -208,10 +212,9 @@ peppymeterbasic.prototype.getUIConfig = function () {
             self.configManager.setUIConfigParam(uiconf, 'sections[0].content[0].value.value', valuescreen);
             self.configManager.setUIConfigParam(uiconf, 'sections[0].content[0].value.label', valuescreen);
 
-            const exitDelay = self.config.get('exitDelay');
-            self.configManager.setUIConfigParam(uiconf, 'sections[1].content[4].value', exitDelay);
-            const scale = self.config.get('scale');
-            self.configManager.setUIConfigParam(uiconf, 'sections[1].content[5].value', scale);
+            self.configManager.setUIConfigParam(uiconf, 'sections[1].content[4].value', self.config.get('exitDelay'));
+            self.configManager.setUIConfigParam(uiconf, 'sections[1].content[5].value', self.config.get('scale'));
+            self.configManager.setUIConfigParam(uiconf, 'sections[1].content[6].value', self.config.get('autostart'));
 
             const directoryPath = '/data/INTERNAL/PeppyMeterBasic/Templates/';
 
@@ -519,6 +522,7 @@ peppymeterbasic.prototype.savepeppy1 = function (data) {
     self.config.set('meter', data['meter'].value);
     self.config.set('exitDelay', data.exitDelay);
     self.config.set('scale', data.scale > 0 ? data.scale : 1);
+    self.config.set('autostart', !!data.autostart);
 
     self.savepeppyconfig();
     self.restartpeppyservice()

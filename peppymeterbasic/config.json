@@ -9,5 +9,6 @@
 "autosize":{"type":"boolean","value":true},
 "zipfile":{"type":"string","value":"Choose a packet"},
 "exitDelay":{"type":"number","value":3},
-"scale":{"type":"number","value":100}
+"scale":{"type":"number","value":100},
+"autostart":{"type":"boolean","value":true}
 }

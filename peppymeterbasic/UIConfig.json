@@ -48,7 +48,8 @@
 				"data": [
 					"meter",
 					"exitDelay",
-					"scale"
+					"scale",
+					"autostart"
 				]
 			},
 			"content": [
@@ -139,6 +140,13 @@
 					"doc": "TRANSLATE.SCALE_DOC",
 					"label": "TRANSLATE.SCALE",
 					"value": 100
+				},
+				{
+					"id": "scale",
+					"element": "switch",
+					"doc": "TRANSLATE.AUTOSTART_DOC",
+					"label": "TRANSLATE.AUTOSTART",
+					"value": true
 				}
 			]
 		},

@@ -17,5 +17,7 @@
   "EXIT_DELAY": "Exit delay (in seconds)",
   "EXIT_DELAY_DOC": "Time to keep the meter showing after playback is paused",
   "SCALE_DOC": "Maximum peak level (in percentage)",
-  "SCALE": "Scale"
+  "SCALE": "Scale",
+  "AUTOSTART_DOC": "Automatically show meter on play and hide on pause/stop. Disable it if you want to control meter state externally.",
+  "AUTOSTART": "Autostart"
 }
