@@ -667,12 +667,12 @@ peppymeterbasic.prototype.savepeppyconfig = function () {
 
 
             fs.writeFile("/data/plugins/user_interface/peppymeterbasic/BasicPeppyMeter/config.txt", conf1, 'utf8', function (err) {
-                if (err)
-
+                if (err) {
                     defer.reject(new Error(err));
-                else defer.resolve();
-                self.logger.error(logPrefix+"Error writing config " + err);
-
+                    self.logger.error(logPrefix+"Error writing config " + err);
+                } else {
+                    defer.resolve();
+                }
             });
 
         });
