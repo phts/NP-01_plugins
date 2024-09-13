@@ -2091,9 +2091,13 @@ ControllerSpotify.prototype.listArtistAlbums = async function (id) {
 };
 
 ControllerSpotify.prototype.getArtistTracks = async function (id) {
-  const {
-    body: {items: artistAlbums},
-  } = await this.spotifyApi.getArtistAlbums(id);
+  const artistAlbumSections = await this.listArtistAlbums(id);
+  const artistAlbums = [
+    ...artistAlbumSections.album,
+    ...artistAlbumSections.single,
+    ...artistAlbumSections.compilation,
+  ];
+
   const albumIds = artistAlbums.map((x) => x.id);
   const {
     body: {albums},
