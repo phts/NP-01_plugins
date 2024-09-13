@@ -1317,7 +1317,7 @@ ControllerSpotify.prototype.listRoot = function (curUri) {
               title: self.getI18n('MY_TOP_TRACKS'),
               artist: '',
               album: '',
-              icon: 'fa fa-thumbs-o-up',
+              icon: 'fa fa-line-chart',
               uri: 'spotify/mytoptracks',
             },
             {
