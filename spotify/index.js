@@ -2159,9 +2159,14 @@ ControllerSpotify.prototype.getArtistRelatedArtists = function (artistId) {
 
 ControllerSpotify.prototype.getFavTracksStatuses = async function (tracks) {
   try {
+    const CHUNK_SIZE = 20;
     const ids = tracks.map((it) => it.id);
-    const {body} = await this.spotifyApi.containsMySavedTracks(ids);
-    return body;
+    return await fetchByChunks(
+      this.spotifyApi,
+      'containsMySavedTracks',
+      {args: [ids]},
+      {chunkSize: CHUNK_SIZE, getItems: ({body}) => Array.from(new Array(CHUNK_SIZE)).map((_, i) => !!body[i])}
+    );
   } catch (e) {
     this.logger.warn(`Failed Spotify API containsMySavedTracks: ${e.message}`);
   }
@@ -2171,7 +2176,7 @@ ControllerSpotify.prototype.getFavTracksStatuses = async function (tracks) {
 ControllerSpotify.prototype.markFavTracks = async function (tracks) {
   const favs = await this.getFavTracksStatuses(tracks);
   return tracks.map((track, i) => {
-    track.favorite = !!favs[i];
+    track.favorite = favs[i];
     return track;
   });
 };
