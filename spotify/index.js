@@ -1991,7 +1991,7 @@ ControllerSpotify.prototype.listWebArtist = async function (uri) {
   };
 
   try {
-    const tracks = await this.listArtistTracks(artistId);
+    const tracks = await this.getArtistTopTracks(artistId);
     topTracksList.items.push(...tracks);
 
     const albumsPerGroup = await this.listArtistAlbums(artistId);
@@ -2030,10 +2030,6 @@ ControllerSpotify.prototype.listWebArtist = async function (uri) {
       lists: [...albumSections, topTracksList, relatedArtistsList],
     },
   };
-};
-
-ControllerSpotify.prototype.listArtistTracks = function (id) {
-  return this.getArtistTopTracks(id);
 };
 
 ControllerSpotify.prototype.listArtistAlbums = async function (id) {
@@ -2094,11 +2090,7 @@ ControllerSpotify.prototype.listArtistAlbums = async function (id) {
   return albumsPerGroup;
 };
 
-ControllerSpotify.prototype.getArtistTracks = function (id) {
-  return this.getArtistAlbumTracks(id);
-};
-
-ControllerSpotify.prototype.getArtistAlbumTracks = async function (id) {
+ControllerSpotify.prototype.getArtistTracks = async function (id) {
   const {
     body: {items: artistAlbums},
   } = await this.spotifyApi.getArtistAlbums(id);
