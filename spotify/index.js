@@ -10,7 +10,7 @@ const SpotifyWebApi = require('spotify-web-api-node');
 const io = require('socket.io-client');
 const NodeCache = require('node-cache');
 const {parseYear, tracksTotalDiscs} = require('./helpers');
-const {fetchPagedData, rateLimitedCall} = require('./utils/extendedSpotifyApi');
+const {fetchPagedData, rateLimitedCall, fetchByChunks} = require('./utils/extendedSpotifyApi');
 
 const configFileDestinationPath = '/tmp/go-librespot-config.yml';
 const credentialsPath = '/data/configuration/music_service/spop/spotifycredentials.json';
@@ -2099,9 +2099,13 @@ ControllerSpotify.prototype.getArtistTracks = async function (id) {
   ];
 
   const albumIds = artistAlbums.map((x) => x.id);
-  const {
-    body: {albums},
-  } = await this.spotifyApi.getAlbums(albumIds);
+  const albums = await fetchByChunks(
+    this.spotifyApi,
+    'getAlbums',
+    {args: [albumIds]},
+    {getItems: (data) => data.body.albums}
+  );
+
   return albums.reduce((acc, album) => {
     const tracks = album.tracks.items
       .filter((track) => this.isTrackAvailableInCountry(track))

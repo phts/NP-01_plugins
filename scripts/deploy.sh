@@ -28,6 +28,7 @@ for arg in "$@"; do
     scp "${SCRIPT_DIR}/../spotify/UIConfig.json" volumio:${PLUGIN_DIR}/
     scp "${SCRIPT_DIR}/../spotify/config.yml.tmpl" volumio:${PLUGIN_DIR}/
     scp "${SCRIPT_DIR}/../spotify/install.sh" volumio:${PLUGIN_DIR}/
+    scp "${SCRIPT_DIR}/../spotify/utils/extendedSpotifyApi/fetchByChunks.js" volumio:${PLUGIN_DIR}/utils/extendedSpotifyApi/
     scp "${SCRIPT_DIR}/../spotify/utils/extendedSpotifyApi/fetchPagedData.js" volumio:${PLUGIN_DIR}/utils/extendedSpotifyApi/
     scp "${SCRIPT_DIR}/../spotify/utils/extendedSpotifyApi/index.js" volumio:${PLUGIN_DIR}/utils/extendedSpotifyApi/
     scp "${SCRIPT_DIR}/../spotify/utils/extendedSpotifyApi/rateLimitedCall.js" volumio:${PLUGIN_DIR}/utils/extendedSpotifyApi/
