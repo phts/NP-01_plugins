@@ -2168,16 +2168,19 @@ ControllerSpotify.prototype.getFavTracksStatuses = async function (tracks) {
   return [];
 };
 
+ControllerSpotify.prototype.markFavTracks = async function (tracks) {
+  const favs = await this.getFavTracksStatuses(tracks);
+  return tracks.map((track, i) => {
+    track.favorite = !!favs[i];
+    return track;
+  });
+};
+
 ControllerSpotify.prototype.getAlbumTracks = async function (id) {
   await this.spotifyCheckAccessToken();
   try {
     const {body: album} = await this.spotifyApi.getAlbum(id);
-    const favs = await this.getFavTracksStatuses(album.tracks.items);
-    const tracks = album.tracks.items
-      .map((track, i) => {
-        track.favorite = !!favs[i];
-        return track;
-      })
+    const tracks = (await this.markFavTracks(album.tracks.items))
       .filter((track) => this.isTrackAvailableInCountry(track))
       .map((track) => ({
         service: 'spop',
@@ -2268,12 +2271,7 @@ ControllerSpotify.prototype.getArtistTopTracks = async function (id) {
     const {
       body: {tracks},
     } = await this.spotifyApi.getArtistTopTracks(id, 'GB');
-    const favs = await this.getFavTracksStatuses(tracks);
-    return tracks
-      .map((track, i) => {
-        track.favorite = !!favs[i];
-        return track;
-      })
+    return (await this.markFavTracks(tracks))
       .filter((track) => this.isTrackAvailableInCountry(track))
       .map((track) => {
         let albumart = '';
