@@ -12,3 +12,4 @@ Noticeable changes:
 - Mark favorite tracks/albums in music library
   - Favorite albums require UI support, official Manifest UI theme explicitly allows favorite marks only on tracks
 - Fetch localized artist names based on current Volumio locale
+- Favorite tracks on Artist page

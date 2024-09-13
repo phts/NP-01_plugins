@@ -34,5 +34,6 @@
   "SPOTIFY_BROWSING": "Просмотр библиотеки Spotify",
   "CONFIGURATION_SUCCESSFULLY_UPDATED": "Конфигурация успешно сохранена",
   "CONNECT_DEVICE_ICON_DOC": "Выберите значок, который будет отображаться в приложении Spotify в списке доступных устройств",
-  "CONNECT_DEVICE_ICON": "Значок устройства"
+  "CONNECT_DEVICE_ICON": "Значок устройства",
+  "FAVORITE_TRACKS": "Любимые треки"
 }
