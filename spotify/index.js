@@ -36,6 +36,7 @@ let volumeDebounce;
 const isDebugMode = true;
 
 const ROUTE_ARTIST_FAV_TRACKS = /spotify\/artist\/([^/]+)\/fav-tracks/;
+const ROUTE_ARTIST_TOP_TRACKS = /spotify\/artist\/([^/]+)\/top-tracks/;
 
 // Define the ControllerSpotify class
 module.exports = ControllerSpotify;
@@ -1223,6 +1224,13 @@ ControllerSpotify.prototype.handleBrowseUri = function (curUri) {
         .listArtistFavTracks(artistId)
         .then((res) => response.resolve(res))
         .catch((e) => response.reject(e));
+    } else if (ROUTE_ARTIST_TOP_TRACKS.test(curUri)) {
+      const artistId = curUri.match(ROUTE_ARTIST_TOP_TRACKS)[1];
+      response = libQ.defer();
+      self
+        .listArtistTopTracks(artistId)
+        .then((res) => response.resolve(res))
+        .catch((e) => response.reject(e));
     } else if (curUri.startsWith('spotify:artist:')) {
       // to support legacy lib "kew" in backend
       response = libQ.defer();
@@ -1987,11 +1995,6 @@ ControllerSpotify.prototype.listWebArtist = async function (uri) {
   };
 
   let info = {};
-  const topTracksList = {
-    availableListViews: ['list'],
-    items: [],
-    title: this.getI18n('TOP_TRACKS'),
-  };
   let albumSections = [];
   const relatedArtistsList = {
     availableListViews: ['list'],
@@ -2000,9 +2003,6 @@ ControllerSpotify.prototype.listWebArtist = async function (uri) {
   };
 
   try {
-    const tracks = await this.getArtistTopTracks(artistId);
-    topTracksList.items.push(...tracks);
-
     const albumsPerGroup = await this.listArtistAlbums(artistId);
     albumSections = ['album', 'single', 'compilation', 'appears_on']
       .map((section) => {
@@ -2045,10 +2045,14 @@ ControllerSpotify.prototype.listWebArtist = async function (uri) {
               icon: 'fa fa-heart',
               uri: `spotify/artist/${artistId}/fav-tracks`,
             },
+            {
+              title: `${this.getI18n('TOP_TRACKS')} >`,
+              icon: 'fa fa-line-chart',
+              uri: `spotify/artist/${artistId}/top-tracks`,
+            },
           ],
         },
         ...albumSections,
-        topTracksList,
         relatedArtistsList,
       ],
     },
@@ -2319,12 +2323,31 @@ ControllerSpotify.prototype.getPlaylistTracks = function (userId, playlistId) {
   return defer.promise;
 };
 
-ControllerSpotify.prototype.getArtistTopTracks = async function (id) {
+ControllerSpotify.prototype.listArtistTopTracks = async function (artistId) {
+  const items = await this.getArtistTopTracks(artistId);
+  const prefix = items.length ? `${items[0].artist}: ` : '';
+  return {
+    navigation: {
+      prev: {
+        uri: 'spotify',
+      },
+      lists: [
+        {
+          title: `${prefix}${this.getI18n('TOP_TRACKS')} (${items.length})`,
+          availableListViews: ['list'],
+          items,
+        },
+      ],
+    },
+  };
+};
+
+ControllerSpotify.prototype.getArtistTopTracks = async function (artistId) {
   await this.spotifyCheckAccessToken();
   try {
     const {
       body: {tracks},
-    } = await this.spotifyApi.getArtistTopTracks(id, 'GB');
+    } = await this.spotifyApi.getArtistTopTracks(artistId, 'GB');
     return (await this.markFavTracks(tracks))
       .filter((track) => this.isTrackAvailableInCountry(track))
       .map((track) => {
