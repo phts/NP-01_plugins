@@ -2059,7 +2059,7 @@ ControllerSpotify.prototype.listWebArtist = async function (uri) {
   };
 };
 
-ControllerSpotify.prototype.listArtistAlbums = async function (id) {
+ControllerSpotify.prototype.listArtistAlbums = async function (id, markFavorites = true) {
   let albums = [];
   await this.spotifyCheckAccessToken();
   await fetchPagedData(
@@ -2095,7 +2095,9 @@ ControllerSpotify.prototype.listArtistAlbums = async function (id) {
     {album: [], single: [], compilation: [], appears_on: []}
   );
 
-  this.markFavorites(albums, 'albums');
+  if (markFavorites) {
+    this.markFavorites(albums, 'albums');
+  }
   return albumsPerGroup;
 };
 
@@ -2125,7 +2127,7 @@ ControllerSpotify.prototype.listArtistFavTracks = async function (artistId) {
 };
 
 ControllerSpotify.prototype.getArtistTracks = async function (id) {
-  const artistAlbumSections = await this.listArtistAlbums(id);
+  const artistAlbumSections = await this.listArtistAlbums(id, false);
   const artistAlbums = [
     ...artistAlbumSections.album,
     ...artistAlbumSections.single,
