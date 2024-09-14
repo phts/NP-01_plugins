@@ -2095,31 +2095,13 @@ ControllerSpotify.prototype.listArtistAlbums = async function (id) {
     {album: [], single: [], compilation: [], appears_on: []}
   );
 
-  try {
-    // due to Spotify limitation only first 50 items can be handled per one request
-    // so albums in the first row, then the rest
-    const sortedAlbums = ['album', 'single', 'compilation', 'appears_on']
-      .reduce((acc, g) => {
-        acc.push(...albumsPerGroup[g]);
-        return acc;
-      }, [])
-      .slice(0, 50);
-    const albumIds = sortedAlbums.map((x) => x.id);
-    const {body: favs} = await this.spotifyApi.containsMySavedAlbums(albumIds);
-    sortedAlbums.forEach((album, i) => {
-      album.favorite = !!favs[i];
-    });
-  } catch (e) {
-    this.logger.warn(`Failed Spotify API containsMySavedAlbums: ${e.message}`);
-    // ignore
-  }
-
+  this.markFavorites(albums, 'albums');
   return albumsPerGroup;
 };
 
 ControllerSpotify.prototype.getArtistFavTracks = async function (artistId) {
   const tracks = await this.getArtistTracks(artistId);
-  const favTracks = (await this.markFavTracks(tracks)).filter((x) => x.favorite);
+  const favTracks = (await this.markFavorites(tracks, 'tracks')).filter((x) => x.favorite);
   return favTracks;
 };
 
@@ -2210,27 +2192,28 @@ ControllerSpotify.prototype.getArtistRelatedArtists = function (artistId) {
   return defer.promise;
 };
 
-ControllerSpotify.prototype.getFavTracksStatuses = async function (tracks) {
+ControllerSpotify.prototype.getFavStatuses = async function (items, mode) {
+  const CHUNK_SIZE = 50;
+  const method = mode === 'albums' ? 'containsMySavedAlbums' : 'containsMySavedTracks';
   try {
-    const CHUNK_SIZE = 20;
-    const ids = tracks.map((it) => it.id);
+    const ids = items.map((it) => it.id);
     return await fetchByChunks(
       this.spotifyApi,
-      'containsMySavedTracks',
+      method,
       {args: [ids]},
       {chunkSize: CHUNK_SIZE, getItems: ({body}) => Array.from(new Array(CHUNK_SIZE)).map((_, i) => !!body[i])}
     );
   } catch (e) {
-    this.logger.warn(`Failed Spotify API containsMySavedTracks: ${e.message}`);
+    this.logger.warn(`Failed Spotify API ${method}: ${e.message}`);
   }
   return [];
 };
 
-ControllerSpotify.prototype.markFavTracks = async function (tracks) {
-  const favs = await this.getFavTracksStatuses(tracks);
-  return tracks.map((track, i) => {
-    track.favorite = favs[i];
-    return track;
+ControllerSpotify.prototype.markFavorites = async function (items, mode) {
+  const favs = await this.getFavStatuses(items, mode);
+  return items.map((it, i) => {
+    it.favorite = favs[i];
+    return it;
   });
 };
 
@@ -2238,7 +2221,7 @@ ControllerSpotify.prototype.getAlbumTracks = async function (id) {
   await this.spotifyCheckAccessToken();
   try {
     const {body: album} = await this.spotifyApi.getAlbum(id);
-    const tracks = (await this.markFavTracks(album.tracks.items))
+    const tracks = (await this.markFavorites(album.tracks.items))
       .filter((track) => this.isTrackAvailableInCountry(track))
       .map((track) => ({
         service: 'spop',
@@ -2348,7 +2331,7 @@ ControllerSpotify.prototype.getArtistTopTracks = async function (artistId) {
     const {
       body: {tracks},
     } = await this.spotifyApi.getArtistTopTracks(artistId, 'GB');
-    return (await this.markFavTracks(tracks))
+    return (await this.markFavorites(tracks, 'tracks'))
       .filter((track) => this.isTrackAvailableInCountry(track))
       .map((track) => {
         let albumart = '';
