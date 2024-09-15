@@ -2317,7 +2317,7 @@ ControllerSpotify.prototype.getArtistTopTracks = async function (artistId) {
   try {
     const {
       body: {tracks},
-    } = await this.spotifyApi.getArtistTopTracks(artistId, 'GB');
+    } = await this.spotifyApi.getArtistTopTracks(artistId);
     return (await this.markFavorites(tracks, 'tracks')).map((track) => {
       let albumart = '';
       if (track.album.images && track.album.images.length > 0) {
