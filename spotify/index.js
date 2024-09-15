@@ -1050,7 +1050,6 @@ ControllerSpotify.prototype.getUserInformations = function () {
       if (data && data.body) {
         self.debugLog('User informations: ' + JSON.stringify(data.body));
         self.loggedInUserId = data.body.id;
-        self.userCountry = data.body.country || 'US';
         self.config.set('logged_user_id', self.loggedInUserId);
         self.isLoggedIn = true;
         defer.resolve('');
@@ -1502,19 +1501,17 @@ ControllerSpotify.prototype.getMyTracks = function () {
         onData: (items) => {
           for (const i in items) {
             const track = items[i].track;
-            if (this.isTrackAvailableInCountry(track)) {
-              tracks.push({
-                service: 'spop',
-                type: 'song',
-                title: track.name,
-                artist: track.artists[0] ? track.artists[0].name : null,
-                album: track.album.name || null,
-                albumart: this._getAlbumArt(track.album),
-                uri: track.uri,
-                year: parseYear(track.album),
-                tracknumber: track.track_number,
-              });
-            }
+            tracks.push({
+              service: 'spop',
+              type: 'song',
+              title: track.name,
+              artist: track.artists[0] ? track.artists[0].name : null,
+              album: track.album.name || null,
+              albumart: this._getAlbumArt(track.album),
+              uri: track.uri,
+              year: parseYear(track.album),
+              tracknumber: track.track_number,
+            });
           }
         },
         onEnd: () => {
@@ -1673,19 +1670,17 @@ ControllerSpotify.prototype.getTopTracks = function (curUri) {
 
         for (const i in results.body.items) {
           const track = results.body.items[i];
-          if (self.isTrackAvailableInCountry(track)) {
-            response.navigation.lists[0].items.push({
-              service: 'spop',
-              type: 'song',
-              title: track.name,
-              artist: track.artists[0].name || null,
-              album: track.album.name || null,
-              albumart: self._getAlbumArt(track.album),
-              uri: track.uri,
-              year: parseYear(track.album),
-              tracknumber: track.track_number,
-            });
-          }
+          response.navigation.lists[0].items.push({
+            service: 'spop',
+            type: 'song',
+            title: track.name,
+            artist: track.artists[0].name || null,
+            album: track.album.name || null,
+            albumart: self._getAlbumArt(track.album),
+            uri: track.uri,
+            year: parseYear(track.album),
+            tracknumber: track.track_number,
+          });
         }
         defer.resolve(response);
       },
@@ -1724,19 +1719,17 @@ ControllerSpotify.prototype.getRecentTracks = function (curUri) {
 
         for (const i in results.body.items) {
           const track = results.body.items[i].track;
-          if (self.isTrackAvailableInCountry(track)) {
-            response.navigation.lists[0].items.push({
-              service: 'spop',
-              type: 'song',
-              title: track.name,
-              artist: track.artists[0].name || null,
-              album: track.album.name || null,
-              albumart: self._getAlbumArt(track.album),
-              uri: track.uri,
-              year: parseYear(track.album),
-              tracknumber: track.track_number,
-            });
-          }
+          response.navigation.lists[0].items.push({
+            service: 'spop',
+            type: 'song',
+            title: track.name,
+            artist: track.artists[0].name || null,
+            album: track.album.name || null,
+            albumart: self._getAlbumArt(track.album),
+            uri: track.uri,
+            year: parseYear(track.album),
+            tracknumber: track.track_number,
+          });
         }
         defer.resolve(response);
       },
@@ -2143,21 +2136,19 @@ ControllerSpotify.prototype.getArtistTracks = async function (id) {
   );
 
   return albums.reduce((acc, album) => {
-    const tracks = album.tracks.items
-      .filter((track) => this.isTrackAvailableInCountry(track))
-      .map((track) => ({
-        id: track.id,
-        service: 'spop',
-        type: 'song',
-        name: track.name,
-        title: track.name,
-        artist: track.artists[0].name,
-        album: album.name,
-        albumart: this._getAlbumArt(album),
-        uri: track.uri,
-        year: parseYear(album),
-        tracknumber: track.track_number,
-      }));
+    const tracks = album.tracks.items.map((track) => ({
+      id: track.id,
+      service: 'spop',
+      type: 'song',
+      name: track.name,
+      title: track.name,
+      artist: track.artists[0].name,
+      album: album.name,
+      albumart: this._getAlbumArt(album),
+      uri: track.uri,
+      year: parseYear(album),
+      tracknumber: track.track_number,
+    }));
     return [...acc, ...tracks];
   }, []);
 };
@@ -2223,28 +2214,26 @@ ControllerSpotify.prototype.getAlbumTracks = async function (id) {
   await this.spotifyCheckAccessToken();
   try {
     const {body: album} = await this.spotifyApi.getAlbum(id);
-    const tracks = (await this.markFavorites(album.tracks.items))
-      .filter((track) => this.isTrackAvailableInCountry(track))
-      .map((track) => ({
-        service: 'spop',
-        type: 'song',
-        title: track.name,
-        name: track.name,
-        artist: track.artists[0].name,
-        album: album.name,
-        albumart: album.images[0].url,
-        uri: track.uri,
-        samplerate: '44.1 KHz',
-        bitdepth: '16 bit',
-        bitrate: this.getCurrentBitrate(),
-        codec: 'ogg',
-        trackType: 'spotify',
-        duration: Math.trunc(track.duration_ms / 1000),
-        year: parseYear(album),
-        tracknumber: track.track_number,
-        favorite: track.favorite,
-        discnumber: parseInt(track.disc_number),
-      }));
+    const tracks = (await this.markFavorites(album.tracks.items)).map((track) => ({
+      service: 'spop',
+      type: 'song',
+      title: track.name,
+      name: track.name,
+      artist: track.artists[0].name,
+      album: album.name,
+      albumart: album.images[0].url,
+      uri: track.uri,
+      samplerate: '44.1 KHz',
+      bitdepth: '16 bit',
+      bitrate: this.getCurrentBitrate(),
+      codec: 'ogg',
+      trackType: 'spotify',
+      duration: Math.trunc(track.duration_ms / 1000),
+      year: parseYear(album),
+      tracknumber: track.track_number,
+      favorite: track.favorite,
+      discnumber: parseInt(track.disc_number),
+    }));
     const totalDiscs = tracksTotalDiscs(tracks);
     if (totalDiscs === 1) {
       return tracks;
@@ -2269,30 +2258,26 @@ ControllerSpotify.prototype.getPlaylistTracks = function (userId, playlistId) {
         onData: (items) => {
           for (const i in items) {
             const track = items[i].track;
-            if (this.isTrackAvailableInCountry(track)) {
-              const item = {
-                service: 'spop',
-                type: 'song',
-                name: track.name,
-                title: track.name,
-                artist: track.artists[0].name,
-                album: track.album.name,
-                uri: track.uri,
-                samplerate: '44.1 KHz',
-                bitdepth: '16 bit',
-                bitrate: this.getCurrentBitrate(),
-                codec: 'ogg',
-                trackType: 'spotify',
-                albumart:
-                  track.album.hasOwnProperty('images') && track.album.images.length > 0
-                    ? track.album.images[0].url
-                    : '',
-                duration: Math.trunc(track.duration_ms / 1000),
-                year: parseYear(track.album),
-                tracknumber: track.track_number,
-              };
-              response.push(item);
-            }
+            const item = {
+              service: 'spop',
+              type: 'song',
+              name: track.name,
+              title: track.name,
+              artist: track.artists[0].name,
+              album: track.album.name,
+              uri: track.uri,
+              samplerate: '44.1 KHz',
+              bitdepth: '16 bit',
+              bitrate: this.getCurrentBitrate(),
+              codec: 'ogg',
+              trackType: 'spotify',
+              albumart:
+                track.album.hasOwnProperty('images') && track.album.images.length > 0 ? track.album.images[0].url : '',
+              duration: Math.trunc(track.duration_ms / 1000),
+              year: parseYear(track.album),
+              tracknumber: track.track_number,
+            };
+            response.push(item);
           }
         },
         onEnd: () => {
@@ -2333,33 +2318,31 @@ ControllerSpotify.prototype.getArtistTopTracks = async function (artistId) {
     const {
       body: {tracks},
     } = await this.spotifyApi.getArtistTopTracks(artistId, 'GB');
-    return (await this.markFavorites(tracks, 'tracks'))
-      .filter((track) => this.isTrackAvailableInCountry(track))
-      .map((track) => {
-        let albumart = '';
-        if (track.album.images && track.album.images.length > 0) {
-          albumart = track.album.images[0].url;
-        }
-        return {
-          service: 'spop',
-          type: 'song',
-          name: track.name,
-          title: track.name,
-          artist: track.artists[0].name,
-          album: track.album.name,
-          albumart: albumart,
-          duration: parseInt(track.duration_ms / 1000),
-          samplerate: '44.1 KHz',
-          bitdepth: '16 bit',
-          bitrate: this.getCurrentBitrate(),
-          codec: 'ogg',
-          trackType: 'spotify',
-          uri: track.uri,
-          year: parseYear(track.album),
-          tracknumber: track.track_number,
-          favorite: track.favorite,
-        };
-      });
+    return (await this.markFavorites(tracks, 'tracks')).map((track) => {
+      let albumart = '';
+      if (track.album.images && track.album.images.length > 0) {
+        albumart = track.album.images[0].url;
+      }
+      return {
+        service: 'spop',
+        type: 'song',
+        name: track.name,
+        title: track.name,
+        artist: track.artists[0].name,
+        album: track.album.name,
+        albumart: albumart,
+        duration: parseInt(track.duration_ms / 1000),
+        samplerate: '44.1 KHz',
+        bitdepth: '16 bit',
+        bitrate: this.getCurrentBitrate(),
+        codec: 'ogg',
+        trackType: 'spotify',
+        uri: track.uri,
+        year: parseYear(track.album),
+        tracknumber: track.track_number,
+        favorite: track.favorite,
+      };
+    });
   } catch (e) {
     this.logger.error('An error occurred while listing Spotify artist tracks ' + e);
     throw e;
@@ -2740,26 +2723,6 @@ ControllerSpotify.prototype.debugLog = function (stringToLog) {
 
   if (isDebugMode) {
     console.log('SPOTIFY: ' + stringToLog);
-  }
-};
-
-ControllerSpotify.prototype.isTrackAvailableInCountry = function (currentTrackObj) {
-  const self = this;
-
-  if (
-    self.userCountry &&
-    self.userCountry.length &&
-    currentTrackObj &&
-    currentTrackObj.available_markets &&
-    currentTrackObj.available_markets.length
-  ) {
-    if (currentTrackObj.available_markets.includes(self.userCountry)) {
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    return true;
   }
 };
 
