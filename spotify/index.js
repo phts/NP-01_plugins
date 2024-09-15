@@ -37,6 +37,8 @@ const isDebugMode = true;
 
 const ROUTE_ARTIST_FAV_TRACKS = /spotify\/artist\/([^/]+)\/fav-tracks/;
 const ROUTE_ARTIST_TOP_TRACKS = /spotify\/artist\/([^/]+)\/top-tracks/;
+const ROUTE_ARTIST_RELATED = /spotify\/artist\/([^/]+)\/related/;
+const ROUTE_ARTIST_APPEARS_ON = /spotify\/artist\/([^/]+)\/appears-on/;
 
 // Define the ControllerSpotify class
 module.exports = ControllerSpotify;
@@ -1230,6 +1232,20 @@ ControllerSpotify.prototype.handleBrowseUri = function (curUri) {
         .listArtistTopTracks(artistId)
         .then((res) => response.resolve(res))
         .catch((e) => response.reject(e));
+    } else if (ROUTE_ARTIST_RELATED.test(curUri)) {
+      const artistId = curUri.match(ROUTE_ARTIST_RELATED)[1];
+      response = libQ.defer();
+      self
+        .listRelatedArtists(artistId)
+        .then((res) => response.resolve(res))
+        .catch((e) => response.reject(e));
+    } else if (ROUTE_ARTIST_APPEARS_ON.test(curUri)) {
+      const artistId = curUri.match(ROUTE_ARTIST_APPEARS_ON)[1];
+      response = libQ.defer();
+      self
+        .listArtistAppearsOn(artistId)
+        .then((res) => response.resolve(res))
+        .catch((e) => response.reject(e));
     } else if (curUri.startsWith('spotify:artist:')) {
       // to support legacy lib "kew" in backend
       response = libQ.defer();
@@ -1984,20 +2000,16 @@ ControllerSpotify.prototype.listWebArtist = async function (uri) {
     album: this.commandRouter.getI18nString('COMMON.ALBUMS'),
     single: this.getI18n('SINGLES_OR_EP'),
     compilation: this.getI18n('COMPILATION'),
-    appears_on: this.getI18n('APPEARS_ON'),
   };
 
   let info = {};
   let albumSections = [];
-  const relatedArtistsList = {
-    availableListViews: ['list'],
-    items: [],
-    title: this.getI18n('RELATED_ARTISTS'),
-  };
-
   try {
-    const albumsPerGroup = await this.listArtistAlbums(artistId);
-    albumSections = ['album', 'single', 'compilation', 'appears_on']
+    const albumsPerGroup = await this.listArtistAlbums(artistId, {
+      markFavorites: true,
+      groups: 'album,single,compilation',
+    });
+    albumSections = ['album', 'single', 'compilation']
       .map((section) => {
         const items = albumsPerGroup[section];
         if (!items.length) {
@@ -2012,9 +2024,6 @@ ControllerSpotify.prototype.listWebArtist = async function (uri) {
       .filter(Boolean);
 
     info = await this.getArtistInfo(artistId);
-
-    const relatedArtists = await this.getArtistRelatedArtists(artistId);
-    relatedArtistsList.items.push(...relatedArtists);
   } catch (e) {
     this.logger.error('An error occurred while fetching Spotify artist ' + e);
   }
@@ -2046,19 +2055,33 @@ ControllerSpotify.prototype.listWebArtist = async function (uri) {
           ],
         },
         ...albumSections,
-        relatedArtistsList,
+        {
+          availableListViews: ['list'],
+          items: [
+            {
+              title: `${this.getI18n('APPEARS_ON')} >`,
+              icon: 'fa fa-user-circle',
+              uri: `spotify/artist/${artistId}/appears-on`,
+            },
+            {
+              title: `${this.getI18n('RELATED_ARTISTS')} >`,
+              icon: 'fa fa-thumbs-o-up',
+              uri: `spotify/artist/${artistId}/related`,
+            },
+          ],
+        },
       ],
     },
   };
 };
 
-ControllerSpotify.prototype.listArtistAlbums = async function (id, markFavorites = true) {
+ControllerSpotify.prototype.listArtistAlbums = async function (id, {markFavorites, groups}) {
   let albums = [];
   await this.spotifyCheckAccessToken();
   await fetchPagedData(
     this.spotifyApi,
     'getArtistAlbums',
-    {requiredArgs: [id]},
+    {requiredArgs: [id], options: {include_groups: groups}},
     {
       onData: (items) => {
         albums = [
@@ -2120,7 +2143,10 @@ ControllerSpotify.prototype.listArtistFavTracks = async function (artistId) {
 };
 
 ControllerSpotify.prototype.getArtistTracks = async function (id) {
-  const artistAlbumSections = await this.listArtistAlbums(id, false);
+  const artistAlbumSections = await this.listArtistAlbums(id, {
+    markFavorites: false,
+    groups: 'album,single,compilation',
+  });
   const artistAlbums = [
     ...artistAlbumSections.album,
     ...artistAlbumSections.single,
@@ -2153,36 +2179,57 @@ ControllerSpotify.prototype.getArtistTracks = async function (id) {
   }, []);
 };
 
-ControllerSpotify.prototype.getArtistRelatedArtists = function (artistId) {
-  const self = this;
+ControllerSpotify.prototype.listArtistAppearsOn = async function (artistId) {
+  const albumsPerGroup = await this.listArtistAlbums(artistId, {
+    markFavorites: true,
+    groups: 'appears_on',
+  });
+  const items = albumsPerGroup.appears_on;
+  return {
+    navigation: {
+      prev: {
+        uri: 'spotify',
+      },
+      lists: [
+        {
+          title: `${this.getI18n('APPEARS_ON')} (${items.length})`,
+          availableListViews: ['list'],
+          items,
+        },
+      ],
+    },
+  };
+};
 
-  const defer = libQ.defer();
-
-  const list = [];
-
-  self.spotifyCheckAccessToken().then(function (data) {
-    const spotifyDefer = self.spotifyApi.getArtistRelatedArtists(artistId);
-    spotifyDefer.then(function (results) {
-      for (const i in results.body.artists) {
-        const artist = results.body.artists[i];
-        const albumart = self._getAlbumArt(artist);
-        const item = {
-          service: 'spop',
-          type: 'folder-artist',
-          title: artist.name,
-          albumart: albumart,
-          uri: artist.uri,
-        };
-        if (albumart == '') {
-          item.icon = 'fa fa-user';
-        }
-        list.push(item);
-      }
-      defer.resolve(list);
-    });
+ControllerSpotify.prototype.listRelatedArtists = async function (artistId) {
+  await this.spotifyCheckAccessToken();
+  const results = await this.spotifyApi.getArtistRelatedArtists(artistId);
+  const items = results.body.artists.map((artist) => {
+    const albumart = this._getAlbumArt(artist);
+    return {
+      service: 'spop',
+      type: 'folder-artist',
+      title: artist.name,
+      albumart,
+      uri: artist.uri,
+      icon: albumart ? undefined : 'fa fa-user',
+    };
   });
 
-  return defer.promise;
+  return {
+    navigation: {
+      prev: {
+        uri: 'spotify',
+      },
+      lists: [
+        {
+          title: `${this.getI18n('RELATED_ARTISTS')} (${items.length})`,
+          availableListViews: ['list'],
+          items,
+        },
+      ],
+    },
+  };
 };
 
 ControllerSpotify.prototype.getFavStatuses = async function (items, mode) {

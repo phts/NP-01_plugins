@@ -13,4 +13,4 @@ Noticeable changes:
   - Favorite albums require UI support, official Manifest UI theme explicitly allows favorite marks only on tracks
 - Fetch localized artist names based on current Volumio locale
 - Favorite tracks on Artist page
-- Move artist's "Top tracks" into separate page to speed up the album page
+- Move artist's "Top tracks", "Appears on" and "Related artists" into separate pages to speed up the album page
