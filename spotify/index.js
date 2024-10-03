@@ -2043,11 +2043,13 @@ ControllerSpotify.prototype.listWebArtist = async function (uri) {
           availableListViews: ['list'],
           items: [
             {
+              type: 'item-no-menu',
               title: `${this.getI18n('FAVORITE_TRACKS')} >`,
               icon: 'fa fa-heart',
               uri: `spotify/artist/${artistId}/fav-tracks`,
             },
             {
+              type: 'item-no-menu',
               title: `${this.getI18n('TOP_TRACKS')} >`,
               icon: 'fa fa-line-chart',
               uri: `spotify/artist/${artistId}/top-tracks`,
@@ -2059,11 +2061,13 @@ ControllerSpotify.prototype.listWebArtist = async function (uri) {
           availableListViews: ['list'],
           items: [
             {
+              type: 'item-no-menu',
               title: `${this.getI18n('APPEARS_ON')} >`,
               icon: 'fa fa-user-circle',
               uri: `spotify/artist/${artistId}/appears-on`,
             },
             {
+              type: 'item-no-menu',
               title: `${this.getI18n('RELATED_ARTISTS')} >`,
               icon: 'fa fa-thumbs-o-up',
               uri: `spotify/artist/${artistId}/related`,
