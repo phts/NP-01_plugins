@@ -2874,13 +2874,3 @@ ControllerSpotify.prototype.prefetch = function (track) {
 
   return self.sendSpotifyLocalApiCommandWithPayload('/player/add_to_queue', {uri: track.uri});
 };
-
-ControllerSpotify.prototype.prefetch = function (track) {
-  var self = this;
-
-  // TODO: To finish this we need consume API or queue edititing ability from Spotify
-
-  self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'ControllerSpotify::prefetch');
-
-  return self.sendSpotifyLocalApiCommandWithPayload('/player/add_to_queue', {uri: track.uri});
-};
