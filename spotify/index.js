@@ -471,6 +471,12 @@ ControllerSpotify.prototype.play = function () {
   } else {
     this.sendSpotifyLocalApiCommand('/player/play');
   }
+
+  setTimeout(() => {
+    if (this.state.status !== 'play') {
+      this.sendSpotifyLocalApiCommand('/player/play');
+    }
+  }, 5000);
 };
 
 ControllerSpotify.prototype.stop = function () {
