@@ -2184,6 +2184,7 @@ ControllerSpotify.prototype.getArtistTracks = async function (id) {
       uri: track.uri,
       year: parseYear(album),
       tracknumber: track.track_number,
+      duration: Math.trunc(track.duration_ms / 1000),
     }));
     return [...acc, ...tracks];
   }, []);
