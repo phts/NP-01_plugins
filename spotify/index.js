@@ -12,8 +12,8 @@ const NodeCache = require('node-cache');
 const {parseYear, tracksTotalDiscs} = require('./helpers');
 const {fetchPagedData, rateLimitedCall, fetchByChunks} = require('./utils/extendedSpotifyApi');
 
-const configFileDestinationPath = '/tmp/go-librespot-config.yml';
-const credentialsPath = '/data/configuration/music_service/spop/spotifycredentials.json';
+const configFileDestinationPath = '/data/go-librespot/config.yml';
+const credentialsPath = '/data/go-librespot/state.json';
 const spotifyDaemonPort = '9879';
 const spotifyLocalApiEndpointBase = 'http://127.0.0.1:' + spotifyDaemonPort;
 let seekTimer;
