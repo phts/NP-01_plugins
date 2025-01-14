@@ -56,5 +56,6 @@ Use `--install` to run `install.sh` script, e.g. to install updated `go-librespo
 
 [phts np-01]: https://tsaryk.com/NP-01
 [volumio-plugins-sources]: https://github.com/volumio/volumio-plugins-sources
-[spotify]: ./spotify
+[peppymeterbasic]: ./peppymeterbasic
 [podcast]: ./podcast
+[spotify]: ./spotify
