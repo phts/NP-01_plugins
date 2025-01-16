@@ -252,9 +252,13 @@ ControllerSpotify.prototype.parseEventState = function (event) {
   // and updates the state accordingly
   switch (event.type) {
     case 'metadata':
+      // eslint-disable-next-line no-case-declarations
+      const uri = event.data.uri;
+      // eslint-disable-next-line no-case-declarations
+      const id = uri ? uri.split(':')[2] : undefined;
       self.state.title = event.data.name;
       self.state.duration = self.parseDuration(event.data.duration);
-      self.state.uri = event.data.uri;
+      self.state.uri = uri;
       self.state.artist = self.parseArtists(event.data.artist_names);
       self.state.album = event.data.album_name;
       self.state.albumart = event.data.album_cover_url;
@@ -262,6 +266,10 @@ ControllerSpotify.prototype.parseEventState = function (event) {
       self.state.year = this.parseMetadataYear(event.data.release_date);
       self.state.tracknumber = event.data.track_number;
       self.state.discnumber = event.data.disc_number;
+      self.getFavStatuses([{id}]).then(([isFav]) => {
+        self.state.favorite = typeof isFav === 'undefined' ? null : !!isFav;
+        self.pushState();
+      });
       break;
     case 'will_play':
       // impro: use this event to free up audio device when starting volatile?
@@ -322,7 +330,7 @@ ControllerSpotify.prototype.parseEventState = function (event) {
   }
 
   if (pushStateForEvent) {
-    self.pushState(self.state);
+    self.pushState();
   }
 };
 
@@ -420,7 +428,7 @@ ControllerSpotify.prototype.getState = function () {
 };
 
 // Announce updated Spop state
-ControllerSpotify.prototype.pushState = function (state) {
+ControllerSpotify.prototype.pushState = function () {
   const self = this;
 
   self.state.bitrate = self.getCurrentBitrate();
