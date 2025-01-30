@@ -15,8 +15,8 @@ const NodeCache = require('node-cache');
 var os = require('os');
 const {fetchPagedData, rateLimitedCall} = require('./utils/extendedSpotifyApi');
 
-const configFileDestinationPath = '/tmp/go-librespot-config.yml';
-const credentialsPath = '/data/configuration/music_service/spop/spotifycredentials.json';
+const configFileDestinationPath = '/data/go-librespot/config.yml';
+const credentialsPath = '/data/go-librespot/state.json';
 const spotifyDaemonPort = '9879';
 const spotifyLocalApiEndpointBase = 'http://127.0.0.1:' + spotifyDaemonPort;
 const stateSocket = undefined;
@@ -92,6 +92,7 @@ ControllerSpotify.prototype.onStart = function () {
     self.browseCache = new NodeCache({stdTTL: 3600, checkperiod: 120});
     self.initializeLibrespotDaemon();
     self.initializeSpotifyBrowsingFacility();
+    self.applySpotifyHostsFix();
     defer.resolve();
     return defer.promise;
 };
@@ -828,7 +829,7 @@ ControllerSpotify.prototype.refreshAccessToken = function () {
     const refreshToken = self.config.get('refresh_token', 'none');
     if (refreshToken !== 'none' && refreshToken !== null && refreshToken !== undefined) {
         superagent
-            .post('https://oauth-performer.dfs.volumio.org/spotify/accessToken')
+            .post('https://oauth-performer.prod.vlmapi.io/spotify/accessToken')
             .send({refreshToken: refreshToken})
             .then(function (results) {
                 if (results && results.body && results.body.accessToken) {
@@ -1016,30 +1017,6 @@ ControllerSpotify.prototype.spotifyApiConnect = function () {
     return defer.promise;
 };
 
-ControllerSpotify.prototype.refreshAccessToken = function () {
-    const self = this;
-    const defer = libQ.defer();
-
-    const refreshToken = self.config.get('refresh_token', 'none');
-    if (refreshToken !== 'none' && refreshToken !== null && refreshToken !== undefined) {
-        superagent
-            .post('https://oauth-performer.dfs.volumio.org/spotify/accessToken')
-            .send({refreshToken: refreshToken})
-            .then(function (results) {
-                if (results && results.body && results.body.accessToken) {
-                    defer.resolve(results);
-                } else {
-                    defer.resject('No access token received');
-                }
-            })
-            .catch(function (err) {
-                self.logger.info('An error occurred while refreshing Spotify Token ' + err);
-            });
-    }
-
-    return defer.promise;
-};
-
 ControllerSpotify.prototype.spotifyCheckAccessToken = function () {
     const self = this;
     const defer = libQ.defer();
@@ -1114,7 +1091,7 @@ ControllerSpotify.prototype.flushCache = function () {
 
 ControllerSpotify.prototype._getAlbumArt = function (item) {
     let albumart = '';
-    if (item.hasOwnProperty('images') && item.images.length > 0) {
+    if (item && item.images && item.images.length && item.images.length > 0) {
         albumart = item.images[0].url;
     }
     return albumart;
@@ -1521,18 +1498,6 @@ ControllerSpotify.prototype.getMyTracks = function () {
                     }
                 },
                 onEnd: () => {
-                    tracks.sort((a, b) => {
-                        if (a.artist !== b.artist) {
-                            return a.artist > b.artist ? 1 : -1;
-                        }
-                        if (a.year !== b.year) {
-                            return a.year > b.year ? 1 : -1;
-                        }
-                        if (a.album !== b.album) {
-                            return a.album > b.album ? 1 : -1;
-                        }
-                        return a.tracknumber > b.tracknumber ? 1 : a.tracknumber === b.tracknumber ? 0 : -1;
-                    });
                     defer.resolve({
                         navigation: {
                             prev: {
@@ -2892,4 +2857,47 @@ ControllerSpotify.prototype.getSpotifyVolume = function () {
                 currentSpotifyVolume = results.body.value;
             }
         });
+};
+
+ControllerSpotify.prototype.prefetch = function (track) {
+    const self = this;
+
+    // TODO: To finish this we need consume API or queue edititing ability from Spotify
+
+    self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'ControllerSpotify::prefetch');
+
+    return self.sendSpotifyLocalApiCommandWithPayload('/player/add_to_queue', {uri: track.uri});
+};
+
+ControllerSpotify.prototype.applySpotifyHostsFix = function () {
+    const self = this;
+
+    fs.readFile('/etc/hosts', 'utf8', (err, data) => {
+        if (err) {
+            self.logger.error('Failed to Read hosts file:' + err);
+        } else {
+            if (data.includes('#SPOTIFY HOSTS FIX')) {
+                exec(
+                    '/usr/bin/sudo /bin/chmod 777 /etc/hosts',
+                    {uid: 1000, gid: 1000},
+                    function (error, stdout, stderr) {
+                        if (error !== null) {
+                            self.logger.error('Spotify Cannot set permissions for /etc/hosts: ' + error);
+                        } else {
+                            data = data.split('#SPOTIFY HOSTS FIX')[0];
+                            fs.writeFile('/etc/hosts', data, (err) => {
+                                if (err) {
+                                    self.logger.error('Failed to fix hosts file for Spotify: ' + err);
+                                } else {
+                                    self.logger.info('Successfully fixed Spotify hosts');
+                                }
+                            });
+                        }
+                    }
+                );
+            } else {
+                self.logger.info('No need to fix Spotify hosts');
+            }
+        }
+    });
 };
