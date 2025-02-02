@@ -1,8 +1,10 @@
 ## Basic PeppyMeter for RPI
 
-Noticeable changes:
+Tweaks made to [[the original plugin](https://github.com/volumio/volumio-plugins-sources/tree/master/peppymeterbasic)]:
 
-- Use my fork of [peppy meter repo](https://github.com/phts/NP-01_vu-meter) with more fixes and improvements
-- "Exit delay" option
-- "Scale" option
-- "Autostart" option
+- Global:
+  - Use my fork of [PeppyMeter](https://github.com/phts/NP-01_vu-meter) with more fixes and improvements
+- Settings:
+  - "Exit delay" option
+  - "Scale" option
+  - "Autostart" option

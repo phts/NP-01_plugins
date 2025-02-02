@@ -2,9 +2,7 @@
 
 Modified [Volumio plugins][volumio-plugins-sources] which are used by [PHTS NP-01].
 
-## Changes
-
-Go to each plugin's README for noticeable changes:
+Go to each plugin's README to read more:
 
 - [peppymeterbasic]
 - [podcast]

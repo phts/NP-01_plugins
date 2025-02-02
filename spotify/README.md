@@ -1,16 +1,26 @@
 # Spotify plugin
 
-Noticeable changes:
+Tweaks made to [the original plugin](https://github.com/volumio/volumio-plugins-sources/tree/master/spotify):
 
-- Provide year to state and show it in media library
-- Fetch all "My tracks" and "My albums" and sort items
-- Add "Followed artists" page
-- Support "go to artist/album" for Connect mode
-- Reorder "albums", "EPs", etc into separate lists on Artist's page
-- Option to disable normalization
-- Show track number and year for Connect mode
-- Mark favorite tracks/albums in music library
-  - Favorite albums require UI support, official Manifest UI theme explicitly allows favorite marks only on tracks
-- Fetch localized artist names based on current Volumio locale
-- Favorite tracks on Artist page
-- Move artist's "Top tracks", "Appears on" and "Related artists" into separate pages to speed up the album page
+- State:
+  - Album's year
+  - Favorite track flag
+- Media library:
+  - Show album's year
+  - Fetch all items in "My tracks" and "My albums"
+  - Sort tracks and albums in more intuitive order
+  - Add "Followed artists" page
+  - Fetch localized artist names based on current Volumio locale
+  - Mark favorite tracks/albums
+    - Favorite albums require UI support, however official Manifest UI theme does not support favorite marks on albums. I have my customized Manifest UI theme instead.
+- Artist's page
+  - Reorder "albums", "EPs", etc into separate lists
+  - "Favorite tracks" item
+  - Move "Top tracks", "Appears on" and "Related artists" into separate pages to speed up the page loading
+- Connect mode:
+  - Support "go to artist/album"
+  - Show track number and year
+- Settings:
+  - Option "Disable normalization"
+- Global:
+  - Fix a lot of mistakes and cleaned up dead code found by ESLint/Prettier
