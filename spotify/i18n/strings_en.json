@@ -37,5 +37,10 @@
   "CONFIGURATION_SUCCESSFULLY_UPDATED": "Configuration has been successfully updated",
   "CONNECT_DEVICE_ICON_DOC": "Choose which icon will show the device on your Spotify app in Connect Mode",
   "CONNECT_DEVICE_ICON": "Device icon",
-  "FAVORITE_TRACKS": "Favorite tracks"
+  "FAVORITE_TRACKS": "Favorite tracks",
+  "SORT_AZ": "A-Z",
+  "SORT_DATE": "Release date",
+  "SORT_DATEADDED": "Date added",
+  "SORT_ARTIST": "Artist",
+  "SORT_ALBUM": "Album"
 }

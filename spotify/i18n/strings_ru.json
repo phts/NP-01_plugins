@@ -35,5 +35,10 @@
   "CONFIGURATION_SUCCESSFULLY_UPDATED": "Конфигурация успешно сохранена",
   "CONNECT_DEVICE_ICON_DOC": "Выберите значок, который будет отображаться в приложении Spotify в списке доступных устройств",
   "CONNECT_DEVICE_ICON": "Значок устройства",
-  "FAVORITE_TRACKS": "Любимые треки"
+  "FAVORITE_TRACKS": "Любимые треки",
+  "SORT_AZ": "A-Z",
+  "SORT_DATE": "Дата выпуска",
+  "SORT_DATEADDED": "Дата добавления",
+  "SORT_ARTIST": "Исполнитель",
+  "SORT_ALBUM": "Альбом"
 }

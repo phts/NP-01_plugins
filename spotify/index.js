@@ -10,6 +10,7 @@ const SpotifyWebApi = require('spotify-web-api-node');
 const io = require('socket.io-client');
 const NodeCache = require('node-cache');
 const {parseYear, tracksTotalDiscs, allowedByMarket} = require('./helpers');
+const {parseSortingParams, sorters} = require('./helpers/sorting');
 const {fetchPagedData, rateLimitedCall, fetchByChunks} = require('./utils/extendedSpotifyApi');
 
 const configFileDestinationPath = '/data/go-librespot/config.yml';
@@ -1195,17 +1196,37 @@ ControllerSpotify.prototype.handleBrowseUri = function (curUri) {
     if (curUri == 'spotify') {
       response = self.getRoot();
     } else if (curUri.startsWith('spotify/playlists')) {
-      if (curUri == 'spotify/playlists')
-        response = self.getMyPlaylists(curUri); // use the Spotify Web API instead of the spop service
-      else {
+      if (curUri === 'spotify/playlists' || curUri.startsWith('spotify/playlists?')) {
+        // to support legacy lib "kew" in backend
+        response = libQ.defer();
+        self
+          .getMyPlaylists(curUri)
+          .then((res) => response.resolve(res))
+          .catch((e) => response.reject(e));
+      } else {
         response = self.listWebPlaylist(curUri); // use the function to list playlists returned from the Spotify Web API
       }
     } else if (curUri.startsWith('spotify/myalbums')) {
-      response = self.getMyAlbums(curUri);
+      // to support legacy lib "kew" in backend
+      response = libQ.defer();
+      self
+        .getMyAlbums(curUri)
+        .then((res) => response.resolve(res))
+        .catch((e) => response.reject(e));
     } else if (curUri.startsWith('spotify/mytracks')) {
-      response = self.getMyTracks(curUri);
+      // to support legacy lib "kew" in backend
+      response = libQ.defer();
+      self
+        .getMyTracks(curUri)
+        .then((res) => response.resolve(res))
+        .catch((e) => response.reject(e));
     } else if (curUri.startsWith('spotify/myartists')) {
-      response = self.getMyArtists(curUri);
+      // to support legacy lib "kew" in backend
+      response = libQ.defer();
+      self
+        .getMyArtists(curUri)
+        .then((res) => response.resolve(res))
+        .catch((e) => response.reject(e));
     } else if (curUri.startsWith('spotify/mytopartists')) {
       response = self.getTopArtists(curUri);
     } else if (curUri.startsWith('spotify/mytoptracks')) {
@@ -1425,12 +1446,26 @@ ControllerSpotify.prototype.listRoot = function (curUri) {
   return defer.promise;
 };
 
-ControllerSpotify.prototype.getMyPlaylists = function (curUri) {
-  const self = this;
-  const defer = libQ.defer();
+ControllerSpotify.prototype.getMyPlaylists = async function (uri) {
+  const sorting = parseSortingParams(uri, {sortBy: 'name', sortDir: 'asc'});
+  await this.spotifyCheckAccessToken();
 
-  self.spotifyCheckAccessToken().then(function (data) {
-    const response = {
+  try {
+    const items = [];
+    const results = await this.spotifyApi.getUserPlaylists(this.loggedInUserId, {limit: 50});
+    for (const i in results.body.items) {
+      const playlist = results.body.items[i];
+      items.push({
+        service: 'spop',
+        type: 'external-playlist',
+        title: playlist.name,
+        albumart: this._getAlbumArt(playlist),
+        uri: 'spotify:user:spotify:playlist:' + playlist.id,
+      });
+    }
+    items.sort(sorters.playlists[sorting.sortBy][sorting.sortDir]);
+
+    return {
       navigation: {
         prev: {
           uri: 'spotify',
@@ -1438,42 +1473,53 @@ ControllerSpotify.prototype.getMyPlaylists = function (curUri) {
         lists: [
           {
             availableListViews: ['list', 'grid'],
-            items: [],
+            items,
+            availableSortings: [
+              {
+                label: this.getI18n('SORT_AZ'),
+                asc: {
+                  uri: 'spotify/playlists?sortBy=name&sortDir=asc',
+                  active: sorting.sortBy === 'name' && sorting.sortDir === 'asc',
+                },
+                desc: {
+                  uri: 'spotify/playlists?sortBy=name&sortDir=desc',
+                  active: sorting.sortBy === 'name' && sorting.sortDir === 'desc',
+                },
+              },
+              {
+                label: this.getI18n('SORT_DATEADDED'),
+                asc:
+                  sorting.sortBy === 'dateAdded'
+                    ? {
+                        uri: 'spotify/playlists?sortBy=dateAdded&sortDir=asc',
+                        active: sorting.sortBy === 'dateAdded' && sorting.sortDir === 'asc',
+                      }
+                    : undefined,
+                desc: {
+                  uri: 'spotify/playlists?sortBy=dateAdded&sortDir=desc',
+                  active: sorting.sortBy === 'dateAdded' && sorting.sortDir === 'desc',
+                },
+              },
+            ],
           },
         ],
       },
+      saveInBrowsingHistory: !sorting.enabled,
     };
-    self.spotifyApi.getUserPlaylists(self.loggedInUserId, {limit: 50}).then(
-      function (results) {
-        for (const i in results.body.items) {
-          const playlist = results.body.items[i];
-          response.navigation.lists[0].items.push({
-            service: 'spop',
-            type: 'external-playlist',
-            title: playlist.name,
-            albumart: self._getAlbumArt(playlist),
-            uri: 'spotify:user:spotify:playlist:' + playlist.id,
-          });
-        }
-
-        defer.resolve(response);
-      },
-      function (err) {
-        defer.reject('An error listing Spotify Playlists ' + err.message);
-        self.logger.info('An error occurred while listing Spotify getMyPlaylists ' + err.message);
-      }
-    );
-  });
-
-  return defer.promise;
+  } catch (err) {
+    this.logger.info('An error occurred while listing Spotify getMyPlaylists ' + err.message);
+    throw err;
+  }
 };
 
-ControllerSpotify.prototype.getMyAlbums = function () {
-  const defer = libQ.defer();
+ControllerSpotify.prototype.getMyAlbums = async function (uri) {
+  const sorting = parseSortingParams(uri, {sortBy: 'artist', sortDir: 'asc'});
   const albums = [];
+  let response;
 
-  this.spotifyCheckAccessToken().then(() => {
-    fetchPagedData(
+  await this.spotifyCheckAccessToken();
+  try {
+    await fetchPagedData(
       this.spotifyApi,
       'getMySavedAlbums',
       {},
@@ -1489,17 +1535,13 @@ ControllerSpotify.prototype.getMyAlbums = function () {
               uri: album.uri,
               year: parseYear(album),
               artist: album.artists[0] ? album.artists[0].name : null,
+              addedAt: items[i].added_at,
             });
           }
         },
         onEnd: () => {
-          albums.sort((a, b) => {
-            if (a.artist !== b.artist) {
-              return a.artist.localeCompare(b.artist, undefined, {sensitivity: 'base'});
-            }
-            return a.year > b.year ? 1 : a.year === b.year ? 0 : -1;
-          });
-          defer.resolve({
+          albums.sort(sorters.albums[sorting.sortBy][sorting.sortDir]);
+          response = {
             navigation: {
               prev: {
                 uri: 'spotify',
@@ -1508,27 +1550,81 @@ ControllerSpotify.prototype.getMyAlbums = function () {
                 {
                   availableListViews: ['list', 'grid'],
                   items: albums,
+                  availableSortings: [
+                    {
+                      label: this.getI18n('SORT_AZ'),
+                      asc: {
+                        uri: 'spotify/myalbums?sortBy=name&sortDir=asc',
+                        active: sorting.sortBy === 'name' && sorting.sortDir === 'asc',
+                      },
+                      desc: {
+                        uri: 'spotify/myalbums?sortBy=name&sortDir=desc',
+                        active: sorting.sortBy === 'name' && sorting.sortDir === 'desc',
+                      },
+                    },
+                    {
+                      label: this.getI18n('SORT_DATE'),
+                      asc:
+                        sorting.sortBy === 'releaseDate'
+                          ? {
+                              uri: 'spotify/myalbums?sortBy=releaseDate&sortDir=asc',
+                              active: sorting.sortBy === 'releaseDate' && sorting.sortDir === 'asc',
+                            }
+                          : undefined,
+                      desc: {
+                        uri: 'spotify/myalbums?sortBy=releaseDate&sortDir=desc',
+                        active: sorting.sortBy === 'releaseDate' && sorting.sortDir === 'desc',
+                      },
+                    },
+                    {
+                      label: this.getI18n('SORT_DATEADDED'),
+                      asc:
+                        sorting.sortBy === 'dateAdded'
+                          ? {
+                              uri: 'spotify/myalbums?sortBy=dateAdded&sortDir=asc',
+                              active: sorting.sortBy === 'dateAdded' && sorting.sortDir === 'asc',
+                            }
+                          : undefined,
+                      desc: {
+                        uri: 'spotify/myalbums?sortBy=dateAdded&sortDir=desc',
+                        active: sorting.sortBy === 'dateAdded' && sorting.sortDir === 'desc',
+                      },
+                    },
+                    {
+                      label: this.getI18n('SORT_ARTIST'),
+                      asc: {
+                        uri: 'spotify/myalbums?sortBy=artist&sortDir=asc',
+                        active: sorting.sortBy === 'artist' && sorting.sortDir === 'asc',
+                      },
+                      desc: {
+                        uri: 'spotify/myalbums?sortBy=artist&sortDir=desc',
+                        active: sorting.sortBy === 'artist' && sorting.sortDir === 'desc',
+                      },
+                    },
+                  ],
                 },
               ],
             },
-          });
+            saveInBrowsingHistory: !sorting.enabled,
+          };
         },
       }
-    ).catch((err) => {
-      this.logger.error('An error occurred while listing Spotify my albums ' + err);
-      defer.reject('');
-    });
-  });
-
-  return defer.promise;
+    );
+  } catch (err) {
+    this.logger.error('An error occurred while listing Spotify my albums ' + err);
+    throw err;
+  }
+  return response;
 };
 
-ControllerSpotify.prototype.getMyTracks = function () {
-  const defer = libQ.defer();
+ControllerSpotify.prototype.getMyTracks = async function (uri) {
+  const sorting = parseSortingParams(uri, {sortBy: 'artist', sortDir: 'asc'});
   const tracks = [];
+  let response;
 
-  this.spotifyCheckAccessToken().then(() => {
-    fetchPagedData(
+  await this.spotifyCheckAccessToken();
+  try {
+    await fetchPagedData(
       this.spotifyApi,
       'getMySavedTracks',
       {},
@@ -1549,24 +1645,13 @@ ControllerSpotify.prototype.getMyTracks = function () {
               uri: track.uri,
               year: parseYear(track.album),
               tracknumber: track.track_number,
+              addedAt: items[i].added_at,
             });
           }
         },
         onEnd: () => {
-          tracks.sort((a, b) => {
-            if (a.artist !== b.artist) {
-              return a.artist.localeCompare(b.artist, undefined, {sensitivity: 'base'});
-            }
-            if (a.year !== b.year) {
-              return a.year > b.year ? 1 : -1;
-            }
-            if (a.album !== b.album) {
-              return a.album > b.album ? 1 : -1;
-            }
-            return a.tracknumber > b.tracknumber ? 1 : a.tracknumber === b.tracknumber ? 0 : -1;
-          });
-
-          defer.resolve({
+          tracks.sort(sorters.tracks[sorting.sortBy][sorting.sortDir]);
+          response = {
             navigation: {
               prev: {
                 uri: 'spotify',
@@ -1575,26 +1660,67 @@ ControllerSpotify.prototype.getMyTracks = function () {
                 {
                   availableListViews: ['list'],
                   items: tracks,
+                  availableSortings: [
+                    {
+                      label: this.getI18n('SORT_AZ'),
+                      asc: {
+                        uri: 'spotify/mytracks?sortBy=name&sortDir=asc',
+                        active: sorting.sortBy === 'name' && sorting.sortDir === 'asc',
+                      },
+                      desc: {
+                        uri: 'spotify/mytracks?sortBy=name&sortDir=desc',
+                        active: sorting.sortBy === 'name' && sorting.sortDir === 'desc',
+                      },
+                    },
+                    {
+                      label: this.getI18n('SORT_DATEADDED'),
+                      asc:
+                        sorting.sortBy === 'dateAdded'
+                          ? {
+                              uri: 'spotify/mytracks?sortBy=dateAdded&sortDir=asc',
+                              active: sorting.sortBy === 'dateAdded' && sorting.sortDir === 'asc',
+                            }
+                          : undefined,
+                      desc: {
+                        uri: 'spotify/mytracks?sortBy=dateAdded&sortDir=desc',
+                        active: sorting.sortBy === 'dateAdded' && sorting.sortDir === 'desc',
+                      },
+                    },
+                    {
+                      label: this.getI18n('SORT_ARTIST'),
+                      asc: {
+                        uri: 'spotify/mytracks?sortBy=artist&sortDir=asc',
+                        active: sorting.sortBy === 'artist' && sorting.sortDir === 'asc',
+                      },
+                      desc: {
+                        uri: 'spotify/mytracks?sortBy=artist&sortDir=desc',
+                        active: sorting.sortBy === 'artist' && sorting.sortDir === 'desc',
+                      },
+                    },
+                  ],
                 },
               ],
             },
-          });
+            saveInBrowsingHistory: !sorting.enabled,
+          };
         },
       }
-    ).catch((err) => {
-      this.logger.error('An error occurred while listing Spotify my tracks ' + err);
-      defer.reject('');
-    });
-  });
-  return defer.promise;
+    );
+  } catch (err) {
+    this.logger.error('An error occurred while listing Spotify my tracks ' + err);
+    throw err;
+  }
+  return response;
 };
 
-ControllerSpotify.prototype.getMyArtists = function () {
-  const defer = libQ.defer();
+ControllerSpotify.prototype.getMyArtists = async function (uri) {
+  const sorting = parseSortingParams(uri, {sortBy: 'name', sortDir: 'asc'});
   const artists = [];
+  let response;
 
-  this.spotifyCheckAccessToken().then(() => {
-    fetchPagedData(
+  await this.spotifyCheckAccessToken();
+  try {
+    await fetchPagedData(
       this.spotifyApi,
       'getFollowedArtists',
       {paginationType: 'after'},
@@ -1613,8 +1739,8 @@ ControllerSpotify.prototype.getMyArtists = function () {
           }
         },
         onEnd: () => {
-          artists.sort((a, b) => a.title.localeCompare(b.title, undefined, {sensitivity: 'base'}));
-          defer.resolve({
+          artists.sort(sorters.artists[sorting.sortBy][sorting.sortDir]);
+          response = {
             navigation: {
               prev: {
                 uri: 'spotify',
@@ -1623,19 +1749,46 @@ ControllerSpotify.prototype.getMyArtists = function () {
                 {
                   availableListViews: ['list', 'grid'],
                   items: artists,
+                  availableSortings: [
+                    {
+                      label: this.getI18n('SORT_AZ'),
+                      asc: {
+                        uri: 'spotify/myartists?sortBy=name&sortDir=asc',
+                        active: sorting.sortBy === 'name' && sorting.sortDir === 'asc',
+                      },
+                      desc: {
+                        uri: 'spotify/myartists?sortBy=name&sortDir=desc',
+                        active: sorting.sortBy === 'name' && sorting.sortDir === 'desc',
+                      },
+                    },
+                    {
+                      label: this.getI18n('SORT_DATEADDED'),
+                      asc:
+                        sorting.sortBy === 'dateAdded'
+                          ? {
+                              uri: 'spotify/myartists?sortBy=dateAdded&sortDir=asc',
+                              active: sorting.sortBy === 'dateAdded' && sorting.sortDir === 'asc',
+                            }
+                          : undefined,
+                      desc: {
+                        uri: 'spotify/myartists?sortBy=dateAdded&sortDir=desc',
+                        active: sorting.sortBy === 'dateAdded' && sorting.sortDir === 'desc',
+                      },
+                    },
+                  ],
                 },
               ],
             },
-          });
+            saveInBrowsingHistory: !sorting.enabled,
+          };
         },
       }
-    ).catch((err) => {
-      this.logger.error('An error occurred while listing Spotify my artists ' + err);
-      defer.reject('');
-    });
-  });
-
-  return defer.promise;
+    );
+  } catch (err) {
+    this.logger.error('An error occurred while listing Spotify my artists ' + err);
+    throw err;
+  }
+  return response;
 };
 
 ControllerSpotify.prototype.getTopArtists = function (curUri) {
@@ -2820,10 +2973,7 @@ ControllerSpotify.prototype.explodeUri = function (uri) {
 
   let response;
 
-  if (uri.startsWith('spotify/playlists')) {
-    response = self.getMyPlaylists();
-    defer.resolve(response);
-  } else if (uri.startsWith('spotify:playlist:')) {
+  if (uri.startsWith('spotify:playlist:')) {
     uriSplitted = uri.split(':');
     response = self.getPlaylistTracks(uriSplitted[0], uriSplitted[2]);
     defer.resolve(response);

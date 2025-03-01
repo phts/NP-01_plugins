@@ -8,8 +8,9 @@ Tweaks made to [the original plugin](https://github.com/volumio/volumio-plugins-
 - Media library:
   - Show album's year
   - Fetch all items in "My tracks" and "My albums"
-  - Sort tracks and albums in more intuitive order
   - Add "Followed artists" page
+  - Manual sorting of favorite artists/albums/tracks/playlists
+  - Sort artist's albums by year ascending
   - Fetch localized artist names based on current Volumio locale
   - Mark favorite tracks/albums
     - Favorite albums require UI support, however official Manifest UI theme does not support favorite marks on albums. I have my customized Manifest UI theme instead.
