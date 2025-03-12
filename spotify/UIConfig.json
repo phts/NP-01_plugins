@@ -12,7 +12,10 @@
         {
           "id": "spotify_use",
           "description": "TRANSLATE.OPEN_OR_INSTALL_SPOTIFY_DESCRIPTION",
-          "onClick": {"type": "openUrl", "url": "spotify://"}
+          "onClick": {
+            "type": "openUrl",
+            "url": "spotify://"
+          }
         }
       ]
     },
@@ -56,7 +59,11 @@
           "onClick": {
             "type": "emit",
             "message": "callMethod",
-            "data": {"endpoint": "music_service/spop", "method": "logout", "data": ""}
+            "data": {
+              "endpoint": "music_service/spop",
+              "method": "logout",
+              "data": ""
+            }
           },
           "hidden": true
         }
@@ -72,7 +79,7 @@
       },
       "saveButton": {
         "label": "TRANSLATE.SAVE",
-        "data": ["bitrate", "debug", "normalisation_pregain", "icon"]
+        "data": ["bitrate", "debug", "normalisation_pregain", "enable_autoplay", "icon"]
       },
       "content": [
         {
@@ -178,6 +185,13 @@
               "label": "Set Top Box"
             }
           ]
+        },
+        {
+          "id": "enable_autoplay",
+          "element": "switch",
+          "doc": "Whether autoplay should be enabled after the current playback session ends",
+          "label": "Enable autoplay",
+          "value": true
         }
       ]
     }
