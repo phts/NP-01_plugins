@@ -55,7 +55,11 @@
           "onClick": {
             "type": "emit",
             "message": "callMethod",
-            "data": {"endpoint": "music_service/spop", "method": "logout", "data": ""}
+            "data": {
+              "endpoint": "music_service/spop",
+              "method": "logout",
+              "data": ""
+            }
           },
           "hidden": true
         }
@@ -71,7 +75,15 @@
       },
       "saveButton": {
         "label": "TRANSLATE.SAVE",
-        "data": ["bitrate", "debug", "normalisation_enabled", "normalisation_pregain", "icon", "shared_device"]
+        "data": [
+          "bitrate",
+          "debug",
+          "normalisation_enabled",
+          "normalisation_pregain",
+          "enable_autoplay",
+          "icon",
+          "shared_device"
+        ]
       },
       "content": [
         {
@@ -190,11 +202,17 @@
           ]
         },
         {
+          "id": "enable_autoplay",
+          "element": "switch",
+          "doc": "Whether autoplay should be enabled after the current playback session ends",
+          "label": "Enable autoplay",
+          "value": true
+        },
+        {
           "id": "shared_device",
           "element": "switch",
           "doc": "TRANSLATE.SHARED_DEVICE_DOC",
-          "label": "TRANSLATE.SHARED_DEVICE",
-          "value": true
+          "label": "TRANSLATE.SHARED_DEVICE"
         }
       ]
     }

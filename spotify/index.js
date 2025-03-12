@@ -130,7 +130,10 @@ ControllerSpotify.prototype.getUIConfig = function () {
       uiconf.sections[2].content[4].value.value = icon;
       uiconf.sections[2].content[4].value.label = self.getLabelForSelect(uiconf.sections[2].content[4].options, icon);
 
-      uiconf.sections[2].content[5].value = self.config.get('shared_device');
+      const enableAutoplayValue = self.config.get('enable_autoplay', false);
+      uiconf.sections[2].content[5].value = enableAutoplayValue;
+
+      uiconf.sections[2].content[6].value = self.config.get('shared_device');
 
       defer.resolve(uiconf);
     })
@@ -744,6 +747,7 @@ ControllerSpotify.prototype.createConfigFile = function () {
     externalVolume = false;
   }
   const normalisationPregain = self.config.get('normalisation_pregain', '0');
+  const enableAutoplay = self.config.get('enable_autoplay', false);
   const sharedDevice = self.config.get('shared_device');
 
   let conf = template
@@ -753,6 +757,7 @@ ControllerSpotify.prototype.createConfigFile = function () {
     .replace('${external_volume}', externalVolume)
     .replace('${normalisation_disabled}', !self.config.get('normalisation_enabled', false))
     .replace('${normalisation_pregain}', normalisationPregain)
+    .replace('${disable_autoplay}', !enableAutoplay)
     .replace('${zeroconf_enabled}', sharedDevice);
 
   const credentials_type = self.config.get('credentials_type', null);
@@ -812,8 +817,8 @@ ControllerSpotify.prototype.saveGoLibrespotSettings = function (data) {
   if (data.normalisation_pregain && data.normalisation_pregain.value !== undefined) {
     this.config.set('normalisation_pregain', data.normalisation_pregain.value);
   }
+  this.config.set('enable_autoplay', data.enable_autoplay);
   this.config.set('shared_device', !!data.shared_device);
-
   this.selectedBitrate = this.config.get('bitrate_number', '320').toString();
   this.initializeLibrespotDaemon();
   this.commandRouter.pushToastMessage('info', this.getI18n('CONFIGURATION_SUCCESSFULLY_UPDATED'));
