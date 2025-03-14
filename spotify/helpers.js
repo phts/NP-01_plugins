@@ -7,3 +7,5 @@ module.exports.tracksTotalDiscs = (tracks) => {
   });
   return Object.keys(discs).length;
 };
+
+module.exports.allowedByMarket = (t) => !t.restrictions || t.restrictions.reason !== 'market';

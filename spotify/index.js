@@ -9,7 +9,7 @@ const websocket = require('ws');
 const SpotifyWebApi = require('spotify-web-api-node');
 const io = require('socket.io-client');
 const NodeCache = require('node-cache');
-const {parseYear, tracksTotalDiscs} = require('./helpers');
+const {parseYear, tracksTotalDiscs, allowedByMarket} = require('./helpers');
 const {fetchPagedData, rateLimitedCall, fetchByChunks} = require('./utils/extendedSpotifyApi');
 
 const configFileDestinationPath = '/data/go-librespot/config.yml';
@@ -1536,6 +1536,9 @@ ControllerSpotify.prototype.getMyTracks = function () {
         onData: (items) => {
           for (const i in items) {
             const track = items[i].track;
+            if (!allowedByMarket(track)) {
+              continue;
+            }
             tracks.push({
               service: 'spop',
               type: 'song',
@@ -1705,6 +1708,9 @@ ControllerSpotify.prototype.getTopTracks = function (curUri) {
 
         for (const i in results.body.items) {
           const track = results.body.items[i];
+          if (!allowedByMarket(track)) {
+            continue;
+          }
           response.navigation.lists[0].items.push({
             service: 'spop',
             type: 'song',
@@ -1754,6 +1760,9 @@ ControllerSpotify.prototype.getRecentTracks = function (curUri) {
 
         for (const i in results.body.items) {
           const track = results.body.items[i].track;
+          if (!allowedByMarket(track)) {
+            continue;
+          }
           response.navigation.lists[0].items.push({
             service: 'spop',
             type: 'song',
@@ -2185,7 +2194,7 @@ ControllerSpotify.prototype.getArtistTracks = async function (id) {
   );
 
   return albums.reduce((acc, album) => {
-    const tracks = album.tracks.items.map((track) => ({
+    const tracks = album.tracks.items.filter(allowedByMarket).map((track) => ({
       id: track.id,
       service: 'spop',
       type: 'song',
@@ -2285,7 +2294,7 @@ ControllerSpotify.prototype.getAlbumTracks = async function (id) {
   await this.spotifyCheckAccessToken();
   try {
     const {body: album} = await this.spotifyApi.getAlbum(id);
-    const tracks = (await this.markFavorites(album.tracks.items)).map((track) => ({
+    const tracks = (await this.markFavorites(album.tracks.items.filter(allowedByMarket))).map((track) => ({
       service: 'spop',
       type: 'song',
       title: track.name,
@@ -2329,6 +2338,9 @@ ControllerSpotify.prototype.getPlaylistTracks = function (userId, playlistId) {
         onData: (items) => {
           for (const i in items) {
             const track = items[i].track;
+            if (!allowedByMarket(track)) {
+              continue;
+            }
             const item = {
               service: 'spop',
               type: 'song',
