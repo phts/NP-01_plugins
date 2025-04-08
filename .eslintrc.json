@@ -5,9 +5,18 @@
     "requireConfigFile": false
   },
   "rules": {
-    "no-async-promise-executor": "warn",
-    "no-constant-condition": "warn",
+    "camelcase": "warn",
+    "eqeqeq": "warn",
+    "new-cap": "warn",
+    "no-async-promise-executor": "off",
+    "no-console": "off",
+    "no-constant-condition": "off",
+    "no-path-concat": "warn",
+    "no-prototype-builtins": "off",
+    "no-use-before-define": "off",
+    "no-sequences": "error",
     "no-unused-vars": "warn",
+    "no-var": "warn",
     "strict": "off"
   },
   "overrides": [
