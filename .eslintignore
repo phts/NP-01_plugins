@@ -1,6 +1,10 @@
 *
 !.*.js
 
+!/peppymeterbasic/
+!/peppymeterbasic/**/
+!/peppymeterbasic/**/*.js
+
 !/spotify/
 !/spotify/**/
 !/spotify/**/*.js

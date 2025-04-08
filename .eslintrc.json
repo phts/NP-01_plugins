@@ -12,6 +12,20 @@
   },
   "overrides": [
     {
+      "files": "peppymeterbasic/**/*",
+      "rules": {
+        "import/order": "off",
+        "import/newline-after-import": "off",
+        "no-cond-assign": "warn",
+        "no-empty": "off",
+        "no-path-concat": "off",
+        "no-useless-escape": "warn",
+        "no-var": "off",
+        "prefer-const": "warn",
+        "spaced-comment": "off"
+      }
+    },
+    {
       "files": "*",
       "extends": "@phts/eslint-config/addons/prettier"
     }

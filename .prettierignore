@@ -1,6 +1,10 @@
 *
 !.*.*
 
+!/peppymeterbasic/
+!/peppymeterbasic/**/
+!/peppymeterbasic/**/*
+
 !/spotify/
 !/spotify/**/
 !/spotify/**/*
