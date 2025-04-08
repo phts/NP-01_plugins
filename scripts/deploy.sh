@@ -11,6 +11,7 @@ for arg in "$@"; do
     scp "${SCRIPT_DIR}/../peppymeterbasic/install.sh" volumio:${PLUGIN_DIR}/
     scp "${SCRIPT_DIR}/../peppymeterbasic/package.json" volumio:${PLUGIN_DIR}/
     scp "${SCRIPT_DIR}/../peppymeterbasic/UIConfig.json" volumio:${PLUGIN_DIR}/
+    scp "${SCRIPT_DIR}/../peppymeterbasic/asound/peppy_in.peppy_out.6.conf" volumio:${PLUGIN_DIR}/asound/
     scp "${SCRIPT_DIR}/../peppymeterbasic/i18n/strings_en.json" volumio:${PLUGIN_DIR}/i18n/
   fi
   if [ "$arg" == "podcast" ]; then
