@@ -62,7 +62,7 @@ peppymeterbasic.prototype.getI18nFile = function (langCode) {
 
 peppymeterbasic.prototype.onStop = function () {
   const self = this;
-  let defer = libQ.defer();
+  const defer = libQ.defer();
   self.logger.info('Stopping peppymeterbasic service');
   self.commandRouter.stateMachine.stop().then(function () {
     exec(
@@ -115,7 +115,7 @@ peppymeterbasic.prototype.onStart = function () {
 
 peppymeterbasic.prototype.startpeppyservice = function () {
   const self = this;
-  let defer = libQ.defer();
+  const defer = libQ.defer();
 
   exec(
     '/usr/bin/sudo /bin/systemctl start peppymeterbasic.service',
@@ -138,7 +138,7 @@ peppymeterbasic.prototype.startpeppyservice = function () {
 
 peppymeterbasic.prototype.restartpeppyservice = function () {
   const self = this;
-  let defer = libQ.defer();
+  const defer = libQ.defer();
   exec(
     '/usr/bin/sudo /bin/systemctl restart peppymeterbasic.service',
     {
@@ -160,7 +160,7 @@ peppymeterbasic.prototype.restartpeppyservice = function () {
 
 peppymeterbasic.prototype.stopeppyservice = function () {
   const self = this;
-  let defer = libQ.defer();
+  const defer = libQ.defer();
 
   exec(
     '/usr/bin/sudo /bin/systemctl stop peppymeterbasic.service',
@@ -265,11 +265,11 @@ peppymeterbasic.prototype.getUIConfig = function () {
         .then((folders) => {
           //   console.log('Folders in the directory:', folders);
 
-          let allfolder = '320x240,480x320,800x480,1280x400,' + folders;
+          const allfolder = '320x240,480x320,800x480,1280x400,' + folders;
           //   self.logger.info('list is ' + allfilter)
           var litems = allfolder.split(',');
 
-          for (let a in litems) {
+          for (const a in litems) {
             //    console.log('Text between brackets:', litems[a]);
 
             self.configManager.pushUIConfigParam(uiconf, 'sections[0].content[0].options', {
@@ -338,11 +338,11 @@ peppymeterbasic.prototype.getUIConfig = function () {
           while ((match = regex.exec(idata)) !== null) {
             matches.push(match[1]);
           }
-          let allfilter = 'random,' + matches;
+          const allfilter = 'random,' + matches;
           self.logger.info(logPrefix + 'list is ' + allfilter);
           var litems = allfilter.split(',');
 
-          for (let a in litems) {
+          for (const a in litems) {
             // console.log('Text between brackets:', litems[a]);
 
             self.configManager.pushUIConfigParam(uiconf, 'sections[1].content[0].options', {
@@ -359,7 +359,7 @@ peppymeterbasic.prototype.getUIConfig = function () {
           self.configManager.setUIConfigParam(uiconf, 'sections[3].content[0].value.label', value);
 
           try {
-            let listf = fs.readFileSync('/data/plugins/user_interface/peppymeterbasic/meterslist.txt', 'utf8');
+            const listf = fs.readFileSync('/data/plugins/user_interface/peppymeterbasic/meterslist.txt', 'utf8');
             var result = listf.split('\n');
             let i;
             for (i = 0; i < result.length; i++) {
@@ -701,7 +701,7 @@ peppymeterbasic.prototype.dlmeter = function (data) {
   const self = this;
 
   // Validate and sanitize the zipfile input
-  let zipfile = data['zipfile']?.value;
+  const zipfile = data['zipfile']?.value;
   if (!zipfile || !/^[a-zA-Z0-9_\-]+$/.test(zipfile)) {
     self.logger.error(logPrefix + ' Invalid zipfile name provided.');
     return Promise.reject(new Error('Invalid zipfile name.'));
@@ -749,9 +749,9 @@ peppymeterbasic.prototype.dlmeter = function (data) {
 
 peppymeterbasic.prototype.updatelist = function (data) {
   const self = this;
-  let path = 'https://github.com/balbuze/Meter-peppymeter/raw/main';
-  let name = 'meterslist.txt';
-  let defer = libQ.defer();
+  const path = 'https://github.com/balbuze/Meter-peppymeter/raw/main';
+  const name = 'meterslist.txt';
+  const defer = libQ.defer();
   var destpath = " '/data/plugins/user_interface/peppymeterbasic";
   // self.config.set('importeq', namepath)
   var toDownload = path + '/' + name + "'";

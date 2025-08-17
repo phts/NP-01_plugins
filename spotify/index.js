@@ -136,6 +136,12 @@ ControllerSpotify.prototype.getUIConfig = function () {
 
       uiconf.sections[2].content[6].value = self.config.get('shared_device');
 
+      const audioBufferTime = self.config.get('audio_buffer_time', 500_000);
+      uiconf.sections[2].content[7].value = audioBufferTime;
+
+      const audioPeriodCount = self.config.get('audio_period_count', 4);
+      uiconf.sections[2].content[8].value = audioPeriodCount;
+
       defer.resolve(uiconf);
     })
     .fail(function (error) {
@@ -750,6 +756,8 @@ ControllerSpotify.prototype.createConfigFile = function () {
   const normalisationPregain = self.config.get('normalisation_pregain', '0');
   const enableAutoplay = self.config.get('enable_autoplay', false);
   const sharedDevice = self.config.get('shared_device');
+  const audioBufferTime = self.config.get('audio_buffer_time', 500_000);
+  const audioPeriodCount = self.config.get('audio_period_count', 4);
 
   let conf = template
     .replace('${device_name}', devicename)
@@ -759,7 +767,9 @@ ControllerSpotify.prototype.createConfigFile = function () {
     .replace('${normalisation_disabled}', !self.config.get('normalisation_enabled', false))
     .replace('${normalisation_pregain}', normalisationPregain)
     .replace('${disable_autoplay}', !enableAutoplay)
-    .replace('${zeroconf_enabled}', sharedDevice);
+    .replace('${zeroconf_enabled}', sharedDevice)
+    .replace('${audio_buffer_time}', audioBufferTime)
+    .replace('${audio_period_count}', audioPeriodCount);
 
   const credentials_type = self.config.get('credentials_type', null);
   const logged_user_id = self.config.get('logged_user_id', '');
@@ -818,6 +828,17 @@ ControllerSpotify.prototype.saveGoLibrespotSettings = function (data) {
   if (data.normalisation_pregain && data.normalisation_pregain.value !== undefined) {
     this.config.set('normalisation_pregain', data.normalisation_pregain.value);
   }
+
+  const audioBufferTime = parseInt(data.audio_buffer_time);
+  if (audioBufferTime) {
+    this.config.set('audio_buffer_time', audioBufferTime.toString());
+  }
+
+  const audioPeriodCount = parseInt(data.audio_period_count);
+  if (audioPeriodCount) {
+    this.config.set('audio_period_count', audioPeriodCount.toString());
+  }
+
   this.config.set('enable_autoplay', data.enable_autoplay);
   this.config.set('shared_device', !!data.shared_device);
   this.selectedBitrate = this.config.get('bitrate_number', '320').toString();
@@ -1097,7 +1118,7 @@ ControllerSpotify.prototype.flushCache = function () {
 // ALBUMART
 
 ControllerSpotify.prototype._getAlbumArt = function (item) {
-  var albumart = '';
+  let albumart = '';
   if (item && item.images && item.images.length && item.images.length > 0) {
     albumart = item.images[0].url;
   }
@@ -3048,7 +3069,7 @@ ControllerSpotify.prototype.getSpotifyVolume = function () {
 };
 
 ControllerSpotify.prototype.prefetch = function (track) {
-  var self = this;
+  const self = this;
 
   // TODO: To finish this we need consume API or queue edititing ability from Spotify
 

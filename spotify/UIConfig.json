@@ -81,6 +81,8 @@
           "normalisation_enabled",
           "normalisation_pregain",
           "enable_autoplay",
+          "audio_buffer_time",
+          "audio_period_count",
           "icon",
           "shared_device"
         ]
@@ -213,6 +215,20 @@
           "element": "switch",
           "doc": "TRANSLATE.SHARED_DEVICE_DOC",
           "label": "TRANSLATE.SHARED_DEVICE"
+        },
+        {
+          "id": "audio_buffer_time",
+          "element": "input",
+          "doc": "The audio buffer time in microseconds.",
+          "label": "Audio buffer time",
+          "value": 500000
+        },
+        {
+          "id": "audio_period_count",
+          "element": "input",
+          "doc": "The number of audio periods to request.",
+          "label": "Audio period count",
+          "value": 4
         }
       ]
     }
