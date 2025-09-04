@@ -60,6 +60,7 @@ ControllerSpotify.prototype.onVolumioStart = function () {
   const configFile = this.commandRouter.pluginManager.getConfigurationFile(this.context, 'config.json');
   this.config = new (require('v-conf'))();
   this.config.loadFile(configFile);
+  this.config.set('enable_autoplay', this.config.get('enable_autoplay', false));
   this.config.set('shared_device', this.config.get('shared_device', true));
   return libQ.resolve();
 };
@@ -131,8 +132,7 @@ ControllerSpotify.prototype.getUIConfig = function () {
       uiconf.sections[2].content[4].value.value = icon;
       uiconf.sections[2].content[4].value.label = self.getLabelForSelect(uiconf.sections[2].content[4].options, icon);
 
-      const enableAutoplayValue = self.config.get('enable_autoplay', false);
-      uiconf.sections[2].content[5].value = enableAutoplayValue;
+      uiconf.sections[2].content[5].value = self.config.get('enable_autoplay');
 
       uiconf.sections[2].content[6].value = self.config.get('shared_device');
 
@@ -754,7 +754,6 @@ ControllerSpotify.prototype.createConfigFile = function () {
     externalVolume = false;
   }
   const normalisationPregain = self.config.get('normalisation_pregain', '0');
-  const enableAutoplay = self.config.get('enable_autoplay', false);
   const sharedDevice = self.config.get('shared_device');
   const audioBufferTime = self.config.get('audio_buffer_time', 500_000);
   const audioPeriodCount = self.config.get('audio_period_count', 4);
@@ -766,7 +765,7 @@ ControllerSpotify.prototype.createConfigFile = function () {
     .replace('${external_volume}', externalVolume)
     .replace('${normalisation_disabled}', !self.config.get('normalisation_enabled', false))
     .replace('${normalisation_pregain}', normalisationPregain)
-    .replace('${disable_autoplay}', !enableAutoplay)
+    .replace('${disable_autoplay}', !self.config.get('enable_autoplay'))
     .replace('${zeroconf_enabled}', sharedDevice)
     .replace('${audio_buffer_time}', audioBufferTime)
     .replace('${audio_period_count}', audioPeriodCount);
@@ -839,7 +838,7 @@ ControllerSpotify.prototype.saveGoLibrespotSettings = function (data) {
     this.config.set('audio_period_count', audioPeriodCount.toString());
   }
 
-  this.config.set('enable_autoplay', data.enable_autoplay);
+  this.config.set('enable_autoplay', !!data.enable_autoplay);
   this.config.set('shared_device', !!data.shared_device);
   this.selectedBitrate = this.config.get('bitrate_number', '320').toString();
   this.initializeLibrespotDaemon();
