@@ -1734,7 +1734,7 @@ ControllerSpotify.prototype.getMyTracks = async function (uri) {
 };
 
 ControllerSpotify.prototype.getMyArtists = async function (uri) {
-  const sorting = parseSortingParams(uri, {sortBy: 'name', sortDir: 'asc'});
+  const sorting = parseSortingParams(uri, {sortBy: 'dateAdded', sortDir: 'desc'});
   const artists = [];
   let response;
 
