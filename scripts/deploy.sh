@@ -54,7 +54,7 @@ if [ "${NEED_INSTALL}" == "true" ]; then
 fi
 
 if [ "${NEED_NPM_INSTALL}" == "true" ]; then
-  ssh volumio "cd '${PLUGIN_DIR}' && sudo -S bash 'npm i'"
+  ssh volumio "cd '${PLUGIN_DIR}' && sudo -S npm i"
 fi
 
 if [ "${NEED_UNINSTALL}" == "true" ]; then
