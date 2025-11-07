@@ -62,6 +62,7 @@ ControllerSpotify.prototype.onVolumioStart = function () {
   this.config.loadFile(configFile);
   this.config.set('enable_autoplay', this.config.get('enable_autoplay', false));
   this.config.set('shared_device', this.config.get('shared_device', true));
+  this.config.set('volume_control', this.config.get('volume_control', false));
   return libQ.resolve();
 };
 
@@ -141,6 +142,8 @@ ControllerSpotify.prototype.getUIConfig = function () {
 
       const audioPeriodCount = self.config.get('audio_period_count', 4);
       uiconf.sections[2].content[8].value = audioPeriodCount;
+
+      uiconf.sections[2].content[9].value = self.config.get('volume_control');
 
       defer.resolve(uiconf);
     })
@@ -556,6 +559,13 @@ ControllerSpotify.prototype.onSpotifyVolumeChange = function (volume) {
   const self = this;
 
   self.debugLog('RECEIVED SPOTIFY VOLUME ' + volume);
+  if (!this.config.get('volume_control')) {
+    self.logger.info('Spotify volume control is disabled by settings. Ignoring');
+    if (volume !== 100) {
+      self.setSpotifyDaemonVolume(100, true);
+    }
+    return;
+  }
   if (volume !== currentVolumioVolume) {
     self.logger.info('Setting Volumio Volume from Spotify: ' + volume);
     currentSpotifyVolume = volume;
@@ -568,6 +578,11 @@ ControllerSpotify.prototype.onVolumioVolumeChange = function (volume) {
   const self = this;
 
   self.debugLog('RECEIVED VOLUMIO VOLUME ' + volume);
+  if (!this.config.get('volume_control')) {
+    self.logger.info('Spotify volume control is disabled by settings. Ignoring');
+    return;
+  }
+
   if (volume !== currentSpotifyVolume && self.checkSpotifyAndVolumioDeltaVolumeIsEnough(currentSpotifyVolume, volume)) {
     self.logger.info('Setting Spotify Volume from Volumio: ' + volume);
     currentVolumioVolume = volume;
@@ -576,17 +591,24 @@ ControllerSpotify.prototype.onVolumioVolumeChange = function (volume) {
   }
 };
 
-ControllerSpotify.prototype.setSpotifyDaemonVolume = function (volume) {
+ControllerSpotify.prototype.setSpotifyDaemonVolume = function (volume, immediately) {
   const self = this;
+
+  const handler = () => {
+    self.debugLog('SETTING SPOTIFY VOLUME ' + volume);
+    self.sendSpotifyLocalApiCommandWithPayload('/player/volume', {volume: volume});
+  };
+
+  if (immediately) {
+    handler();
+    return;
+  }
 
   // Volume limiter
   if (volumeDebounce) {
     clearTimeout(volumeDebounce);
   }
-  volumeDebounce = setTimeout(() => {
-    self.debugLog('SETTING SPOTIFY VOLUME ' + volume);
-    self.sendSpotifyLocalApiCommandWithPayload('/player/volume', {volume: volume});
-  }, 1500);
+  volumeDebounce = setTimeout(handler, 1500);
 };
 
 ControllerSpotify.prototype.checkSpotifyAndVolumioDeltaVolumeIsEnough = function (spotifyVolume, volumioVolume) {
@@ -621,8 +643,13 @@ ControllerSpotify.prototype.alignSpotifyVolumeToVolumioVolume = function () {
     } else {
       currentVolumioVolume = currentVolumioVolumeValue;
     }
-    self.logger.info('Setting Spotify Volume from Volumio: ' + currentVolumioVolume);
-    currentSpotifyVolume = currentVolumioVolume;
+    if (this.config.get('volume_control')) {
+      self.logger.info('Setting Spotify Volume from Volumio: ' + currentVolumioVolume);
+      currentSpotifyVolume = currentVolumioVolume;
+    } else {
+      self.logger.info('Spotify volume control is disabled by settings. Ignoring');
+      currentSpotifyVolume = 100;
+    }
     self.setSpotifyDaemonVolume(currentSpotifyVolume);
   }
 };
@@ -840,6 +867,7 @@ ControllerSpotify.prototype.saveGoLibrespotSettings = function (data) {
 
   this.config.set('enable_autoplay', !!data.enable_autoplay);
   this.config.set('shared_device', !!data.shared_device);
+  this.config.set('volume_control', !!data.volume_control);
   this.selectedBitrate = this.config.get('bitrate_number', '320').toString();
   this.initializeLibrespotDaemon();
   this.commandRouter.pushToastMessage('info', this.getI18n('CONFIGURATION_SUCCESSFULLY_UPDATED'));

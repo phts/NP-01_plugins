@@ -84,7 +84,8 @@
           "audio_buffer_time",
           "audio_period_count",
           "icon",
-          "shared_device"
+          "shared_device",
+          "volume_control"
         ]
       },
       "content": [
@@ -229,6 +230,13 @@
           "doc": "The number of audio periods to request.",
           "label": "Audio period count",
           "value": 4
+        },
+        {
+          "id": "volume_control",
+          "element": "switch",
+          "doc": "Whether to be able to change volume by Spotify app. Turn this off if you have mixer type \"None\".",
+          "label": "Volume control by Spotify app",
+          "value": false
         }
       ]
     }
