@@ -23,5 +23,6 @@ Tweaks made to [the original plugin](https://github.com/volumio/volumio-plugins-
   - Show track number and year
 - Settings:
   - Option "Disable normalization"
+  - Option "Volume control"
 - Global:
   - Fix a lot of mistakes and cleaned up dead code found by ESLint/Prettier
