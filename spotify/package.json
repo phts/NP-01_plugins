@@ -1,6 +1,6 @@
 {
   "name": "spop",
-  "version": "4.3.1-phts-np-01",
+  "version": "4.3.4-phts-np-01",
   "description": "Spotify plugin for Volumio3",
   "main": "index.js",
   "scripts": {
