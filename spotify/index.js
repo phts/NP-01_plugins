@@ -201,7 +201,6 @@ ControllerSpotify.prototype.initializeWsConnection = function () {
   });
 
   ws.on('message', function message(data) {
-    self.debugLog('received: ' + data);
     self.parseEventState(JSON.parse(data));
   });
 
@@ -416,8 +415,6 @@ ControllerSpotify.prototype.parseArtists = function (spotifyArtists) {
 };
 
 ControllerSpotify.prototype.unsetVolatile = function () {
-  this.debugLog('UNSET VOLATILE');
-  this.debugLog(JSON.stringify(currentVolumioState));
   unsettingVolatile = true;
   setTimeout(() => {
     unsettingVolatile = false;
@@ -432,8 +429,6 @@ ControllerSpotify.prototype.unsetVolatile = function () {
 ControllerSpotify.prototype.getState = function () {
   const self = this;
 
-  self.debugLog('GET STATE SPOTIFY');
-  self.debugLog(JSON.stringify(self.state));
   return self.state;
 };
 
@@ -442,8 +437,6 @@ ControllerSpotify.prototype.pushState = function () {
   const self = this;
 
   self.state.bitrate = self.getCurrentBitrate();
-  self.debugLog('PUSH STATE SPOTIFY');
-  self.debugLog(JSON.stringify(self.state));
   self.seekTimerAction();
   return self.commandRouter.servicePushState(self.state, 'spop');
 };
@@ -476,8 +469,6 @@ ControllerSpotify.prototype.sendSpotifyLocalApiCommandWithPayload = function (co
 ControllerSpotify.prototype.pause = function () {
   this.logger.info('Spotify Received pause');
 
-  this.debugLog('SPOTIFY PAUSE');
-  this.debugLog(JSON.stringify(currentVolumioState));
   this.sendSpotifyLocalApiCommand('/player/pause');
 };
 
@@ -501,8 +492,6 @@ ControllerSpotify.prototype.stop = function () {
   this.logger.info('Spotify Stop');
   const defer = libQ.defer();
 
-  this.debugLog('SPOTIFY STOP');
-  this.debugLog(JSON.stringify(currentVolumioState));
   this.sendSpotifyLocalApiCommand('/player/pause');
 
   defer.resolve('');
@@ -555,7 +544,6 @@ ControllerSpotify.prototype.repeat = function (value, repeatSingle) {
 ControllerSpotify.prototype.onSpotifyVolumeChange = function (volume) {
   const self = this;
 
-  self.debugLog('RECEIVED SPOTIFY VOLUME ' + volume);
   if (volume !== currentVolumioVolume) {
     self.logger.info('Setting Volumio Volume from Spotify: ' + volume);
     currentSpotifyVolume = volume;
@@ -567,7 +555,6 @@ ControllerSpotify.prototype.onSpotifyVolumeChange = function (volume) {
 ControllerSpotify.prototype.onVolumioVolumeChange = function (volume) {
   const self = this;
 
-  self.debugLog('RECEIVED VOLUMIO VOLUME ' + volume);
   if (volume !== currentSpotifyVolume && self.checkSpotifyAndVolumioDeltaVolumeIsEnough(currentSpotifyVolume, volume)) {
     self.logger.info('Setting Spotify Volume from Volumio: ' + volume);
     currentVolumioVolume = volume;
@@ -584,7 +571,6 @@ ControllerSpotify.prototype.setSpotifyDaemonVolume = function (volume) {
     clearTimeout(volumeDebounce);
   }
   volumeDebounce = setTimeout(() => {
-    self.debugLog('SETTING SPOTIFY VOLUME ' + volume);
     self.sendSpotifyLocalApiCommandWithPayload('/player/volume', {volume: volume});
   }, 1500);
 };
@@ -592,14 +578,11 @@ ControllerSpotify.prototype.setSpotifyDaemonVolume = function (volume) {
 ControllerSpotify.prototype.checkSpotifyAndVolumioDeltaVolumeIsEnough = function (spotifyVolume, volumioVolume) {
   const self = this;
 
-  self.debugLog('SPOTIFY VOLUME ' + spotifyVolume);
-  self.debugLog('VOLUMIO VOLUME ' + volumioVolume);
   if (spotifyVolume === undefined) {
     return self.alignSpotifyVolumeToVolumioVolume();
   }
   try {
     const isDeltaVolumeEnough = Math.abs(parseInt(spotifyVolume) - parseInt(volumioVolume)) >= deltaVolumeTreshold;
-    self.debugLog('DELTA VOLUME ENOUGH: ' + isDeltaVolumeEnough);
     return isDeltaVolumeEnough;
   } catch (e) {
     return false;
@@ -1048,7 +1031,6 @@ ControllerSpotify.prototype.spotifyCheckAccessToken = function () {
       self.spotifyAccessToken = data.body.accessToken;
       self.spotifyApi.setAccessToken(data.body.accessToken);
       self.spotifyAccessTokenExpiration = data.body.expiresInSeconds * 1000 + now;
-      self.logger.info('New access token = ' + self.spotifyAccessToken);
       defer.resolve();
     });
   } else {
@@ -1083,7 +1065,6 @@ ControllerSpotify.prototype.getUserInformations = function () {
   self.spotifyApi.getMe().then(
     function (data) {
       if (data && data.body) {
-        self.debugLog('User informations: ' + JSON.stringify(data.body));
         self.loggedInUserId = data.body.id;
         self.config.set('logged_user_id', self.loggedInUserId);
         self.isLoggedIn = true;
@@ -2713,7 +2694,6 @@ ControllerSpotify.prototype.getTrack = function (id) {
           tracknumber: track.track_number,
         };
         response.push(item);
-        this.debugLog('GET TRACK: ' + JSON.stringify(response));
         defer.resolve(response);
       })
       .catch((e) => {
@@ -2967,18 +2947,8 @@ ControllerSpotify.prototype.goto = function (data) {
 
 // PLUGIN FUNCTIONS
 
-ControllerSpotify.prototype.debugLog = function (stringToLog) {
-  const self = this;
-
-  if (isDebugMode) {
-    console.log('SPOTIFY: ' + stringToLog);
-  }
-};
-
 ControllerSpotify.prototype.explodeUri = function (uri) {
   const self = this;
-
-  self.debugLog('EXPLODING URI:' + uri);
 
   const defer = libQ.defer();
 
