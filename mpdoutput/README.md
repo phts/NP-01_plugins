@@ -1,1 +1,0 @@
-Enable mpd http and icecast streaming

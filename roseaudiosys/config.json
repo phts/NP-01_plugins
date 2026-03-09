@@ -1,9 +1,0 @@
-{
-    "femtoPlayerVolumioReadyGPIO": {
-        "pin": {
-            "value": 17,
-            "type": "number",
-            "description": "GPIO pin number for Volumio Ready signal. Default to Low State at startup."
-        }
-    }
-}
