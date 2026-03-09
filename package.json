@@ -1,0 +1,16 @@
+{
+  "name": "volumio-plugins-sources",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "format": "prettier --write '**/*.{json,md}' && npm run lint -- --fix",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@babel/eslint-parser": "^7.23.9",
+    "@phts/eslint-config": "^2.1.1",
+    "@phts/prettier-config": "^1.2.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.2.4"
+  }
+}

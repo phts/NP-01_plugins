@@ -27,7 +27,7 @@ function waitForCooldown() {
   });
 }
 
-function call(api, method, { logger, args, attempt } = {}) {
+function call(api, method, {logger, args, attempt} = {}) {
   if (attempt > MAX_ATTEMPTS) {
     return Promise.reject(new Error(`Giving up API request ${method} after ${MAX_ATTEMPTS} attempts`));
   }
@@ -43,7 +43,7 @@ function call(api, method, { logger, args, attempt } = {}) {
           `Spotify API method ${method} failed due to "Too many requests". Stop all API requests for ${COOLDOWN_PERIOD} milliseconds.`
         );
         cooldown();
-        call(api, method, { logger, args, attempt: attempt + 1 })
+        call(api, method, {logger, args, attempt: attempt + 1})
           .then((x) => resolve(x))
           .catch((x) => reject(x));
         return;

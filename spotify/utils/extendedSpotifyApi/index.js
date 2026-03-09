@@ -1,4 +1,4 @@
-const { fetchPagedData } = require('./fetchPagedData');
-const { rateLimitedCall } = require('./rateLimitedCall');
+const {fetchPagedData} = require('./fetchPagedData');
+const {rateLimitedCall} = require('./rateLimitedCall');
 
-module.exports = { fetchPagedData, rateLimitedCall };
+module.exports = {fetchPagedData, rateLimitedCall};
