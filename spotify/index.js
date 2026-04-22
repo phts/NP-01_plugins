@@ -360,8 +360,11 @@ ControllerSpotify.prototype.identifyPlaybackMode = function (data) {
 
   // Refactor in order to handle the case where current service is spop but not in volatile mode
   if (
-    (!isVolumioMode && currentVolumioState.service !== 'spop') ||
-    (!isVolumioMode && currentVolumioState.service === 'spop' && currentVolumioState.volatile !== true)
+    (!isVolumioMode && currentVolumioState && currentVolumioState.service !== 'spop') ||
+    (!isVolumioMode &&
+      currentVolumioState &&
+      currentVolumioState.service === 'spop' &&
+      currentVolumioState.volatile !== true)
   ) {
     this.initializeVolatileMode();
   }
