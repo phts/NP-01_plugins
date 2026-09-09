@@ -1,6 +1,6 @@
 {
   "name": "peppymeterbasic",
-  "version": "0.0.3-phts-np-01",
+  "version": "1.0.9-phts-np-01",
   "description": "Basic Peppy-meter for Volumio",
   "main": "index.js",
   "scripts": {
@@ -13,9 +13,9 @@
     "plugin_type": "user_interface",
     "icon": "fa-bar-chart",
     "os": [
-      "buster"
+      "bookworm"
     ],
-    "changelog": "Fix for Spotify",
+    "changelog": "DSD, youtube fix",
     "details": "Easy install Basic-Peppy-meter",
     "architectures": [
       "armhf",
@@ -24,14 +24,14 @@
     "has_alsa_contribution": true
   },
   "dependencies": {
-    "child_process": "",
-    "fs-extra": "^4.0.2",
-    "kew": "",
-    "socket.io-client": "^2.3.0",
-    "v-conf": ""
+    "child_process": "*",
+    "fs-extra": "*",
+    "kew": "*",
+    "socket.io-client": "2.3.0",
+    "v-conf": "*"
   },
   "engines": {
-    "node": ">=8",
-    "volumio": ">=3.703"
+    "node": ">=20",
+    "volumio": ">=4"
   }
 }

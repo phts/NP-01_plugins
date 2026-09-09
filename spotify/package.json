@@ -1,12 +1,12 @@
 {
   "name": "spop",
-  "version": "4.4.1-phts-np-01",
-  "description": "Spotify plugin for Volumio3",
+  "version": "4.5.0-phts-np-01",
+  "description": "Spotify plugin for Volumio4",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Ashthespy, Balbuze, Skirkwood",
+  "author": "Ashthespy, Balbuze, Skirkwood, Devgianlu",
   "license": "ISC",
   "volumio_info": {
     "prettyName": "Spotify",
@@ -14,14 +14,13 @@
     "plugin_type": "music_service",
     "boot_priority": 10,
     "os": [
-      "buster"
+      "bookworm"
     ],
-    "details": "Spotify plugin for Volumio3",
-    "changelog": "",
+    "details": "Spotify plugin for Volumio4",
+    "changelog": "4.5.0: Spotify without reaching for your phone. Authorize this device once, from the device itself, and it plays — the session now survives reboots, and playback starts for real instead of pretending to. Built on go-librespot 0.9.1. This is the first update that is native for the new Nova UI.",
     "architectures": [
       "amd64",
-      "armhf",
-      "i386"
+      "armhf"
     ]
   },
   "dependencies": {
@@ -30,13 +29,13 @@
     "node-cache": "^4.1.1",
     "socket.io-client": "2.1.1",
     "spotify-web-api-node": "phts/spotify-web-api-node#cfe245456d46539a4d6022ad67b8607123f68399",
-    "superagent": "^6.1.0",
+    "superagent": "^8.1.0",
     "v-conf": "^1.4.2",
     "ws": "^8.13.0"
   },
   "engines": {
-    "volumio": ">=3",
+    "volumio": ">=4",
     "node": ">=14.15.4"
   },
-  "repository": "https://github.com/volumio/volumio-plugins-sources"
+  "repository": "https://github.com/volumio/volumio-plugins-sources-bookworm"
 }
