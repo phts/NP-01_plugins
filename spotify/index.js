@@ -1655,7 +1655,6 @@ ControllerSpotify.prototype.getPlaybackAuthorization = function () {
 
   return {authorized: false};
 };
-
 // The mirror of startAuthorization: one button undid one button, so both credentials go.
 // Back to zeroconf rather than leaving device_auth armed, otherwise the restart below
 // immediately mints a pairing code nobody asked for. The daemon restart takes seconds, so
