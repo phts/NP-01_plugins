@@ -49,12 +49,17 @@ for arg in "$@"; do
   fi
 done
 
-if [ "${NEED_INSTALL}" == "true" ]; then
-  ssh volumio "sudo -S bash '${PLUGIN_DIR}/install.sh'"
+if [ -z "${PLUGIN_DIR}" ]; then
+  echo "Usage: deploy.sh <PLUGIN> [options]"
+  exit 1
 fi
 
 if [ "${NEED_NPM_INSTALL}" == "true" ]; then
   ssh volumio "cd '${PLUGIN_DIR}' && sudo -S npm i"
+fi
+
+if [ "${NEED_INSTALL}" == "true" ]; then
+  ssh volumio "sudo -S bash '${PLUGIN_DIR}/install.sh'"
 fi
 
 if [ "${NEED_UNINSTALL}" == "true" ]; then
