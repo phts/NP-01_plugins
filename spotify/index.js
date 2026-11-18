@@ -96,6 +96,13 @@ ControllerSpotify.prototype.onStart = function () {
 
   self.loadI18n();
   self.browseCache = new NodeCache({stdTTL: 3600, checkperiod: 120});
+  if (
+    self.config.get('credentials_type', 'zeroconf') === 'device_auth' &&
+    !self.getPlaybackAuthorization().authorized
+  ) {
+    self.logger.info('Spotify pairing was never completed, starting in Spotify Connect mode');
+    self.config.set('credentials_type', 'zeroconf');
+  }
   self.initializeLibrespotDaemon();
   self.initializeSpotifyBrowsingFacility();
   self.applySpotifyHostsFix();
@@ -213,6 +220,11 @@ ControllerSpotify.prototype.initializeWsConnection = function () {
 
   ws.on('open', function () {
     self.logger.info('Connection to go-librespot Websocket established');
+    // The daemon only stays up once it has resolved Spotify's endpoints, so this is the
+    // first sign the network is there: a browsing login that failed at boot retries here.
+    if (!self.loggedInUserId) {
+      self.initializeSpotifyBrowsingFacility();
+    }
     setTimeout(() => {
       self.initializeSpotifyControls();
     }, 3000);
@@ -635,7 +647,7 @@ ControllerSpotify.prototype.clearAddPlayTrack = function (track) {
   self.resetSpotifyState();
 
   return self.hasActiveDaemonSession().then((hasSession) => {
-    if (!hasSession) {
+    if (hasSession === false) {
       // go-librespot answers /player/play with 200 even with no session and then never
       // plays, leaving Volumio to run its queue and progress bar against silence.
       // Refuse the play instead of faking it, and say why.
@@ -730,6 +742,8 @@ ControllerSpotify.prototype.waitForPairingOutcome = function (timeoutMs) {
 // /status answers 204 "No active session" when go-librespot has nobody logged in and no
 // Connect client attached. Commands are accepted and silently dropped in that state, so
 // playback has to be gated on it rather than discovered 10 seconds later.
+// Resolves undefined when /status does not answer: a busy daemon times out here, and
+// that is not the same as having no session.
 ControllerSpotify.prototype.hasActiveDaemonSession = function () {
   const self = this;
 
@@ -740,7 +754,7 @@ ControllerSpotify.prototype.hasActiveDaemonSession = function () {
     .then((results) => results && results.status === 200)
     .catch((error) => {
       self.logger.error('Failed to read Spotify local API status: ' + error);
-      return false;
+      return undefined;
     });
 };
 
@@ -862,6 +876,9 @@ ControllerSpotify.prototype.startAuthorization = function (data) {
       }
 
       return self.authorizePlayback().then(function (playback) {
+        if (!playback.authorized && !deviceAuthCancelled) {
+          self.fallBackToConnect();
+        }
         // release() before the refresh, not after: refreshUiConfig goes through
         // getUIConfig, which re-opens the modal of a flow still marked as running.
         release(self.getI18n(playback.authorized ? 'PAIRING_SUCCESSFUL' : playback.reason));
@@ -870,6 +887,7 @@ ControllerSpotify.prototype.startAuthorization = function (data) {
     })
     .fail(function (e) {
       self.logger.error('Failed authorizing Spotify: ' + e);
+      self.fallBackToConnect();
       release(self.getI18n('PAIRING_FAILED'));
     });
 
@@ -885,6 +903,18 @@ ControllerSpotify.prototype.startAuthorization = function (data) {
 // keeps the code it already minted, so a user who changes their mind again can still
 // approve it, while the next restart comes up in the state a device should idle in rather
 // than minting a code nobody asked for.
+ControllerSpotify.prototype.fallBackToConnect = function () {
+  const self = this;
+
+  if (self.config.get('credentials_type', 'zeroconf') !== 'device_auth' || self.getPlaybackAuthorization().authorized) {
+    return libQ.resolve('');
+  }
+
+  self.logger.info('Spotify pairing not completed, back to Spotify Connect mode');
+  self.config.set('credentials_type', 'zeroconf');
+  return self.initializeLibrespotDaemon();
+};
+
 ControllerSpotify.prototype.cancelAuthorization = function () {
   const self = this;
 
@@ -1756,11 +1786,12 @@ ControllerSpotify.prototype.refreshAccessToken = function () {
         if (results && results.body && results.body.accessToken) {
           defer.resolve(results);
         } else {
-          defer.resject('No access token received');
+          defer.reject('No access token received');
         }
       })
       .catch(function (err) {
         self.logger.info('An error occurred while refreshing Spotify Token ' + err);
+        defer.reject(err);
       });
   }
 
@@ -1787,6 +1818,7 @@ ControllerSpotify.prototype.spotifyClientCredentialsGrant = function () {
       },
       function (err) {
         self.logger.info('Spotify credentials grant failed with ' + err);
+        defer.reject(err);
       }
     );
   }
@@ -1980,13 +2012,18 @@ ControllerSpotify.prototype.spotifyCheckAccessToken = function () {
   const now = d.getTime();
 
   if (self.spotifyAccessTokenExpiration < now) {
-    self.refreshAccessToken().then(function (data) {
-      self.spotifyAccessToken = data.body.accessToken;
-      self.spotifyApi.setAccessToken(data.body.accessToken);
-      self.spotifyAccessTokenExpiration = data.body.expiresInSeconds * 1000 + now;
-      self.logger.info('New access token = ' + self.spotifyAccessToken);
-      defer.resolve();
-    });
+    self.refreshAccessToken().then(
+      function (data) {
+        self.spotifyAccessToken = data.body.accessToken;
+        self.spotifyApi.setAccessToken(data.body.accessToken);
+        self.spotifyAccessTokenExpiration = data.body.expiresInSeconds * 1000 + now;
+        self.logger.info('New access token = ' + self.spotifyAccessToken);
+        defer.resolve();
+      },
+      function (err) {
+        defer.reject(err);
+      }
+    );
   } else {
     defer.resolve();
   }
